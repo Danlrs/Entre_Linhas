@@ -1,0 +1,20 @@
+:host {
+  display: contents;
+}
+
+.scroll-shadow::-webkit-scrollbar {
+  width: 8px;
+}
+
+.scroll-shadow::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scroll-shadow::-webkit-scrollbar-thumb {
+  background: #ede8e0;
+  border-radius: 999px;
+}
+
+.scroll-shadow::-webkit-scrollbar-thumb:hover {
+  background: #d8d2c8;
+}

@@ -1,0 +1,429 @@
+<section class="min-h-screen bg-gradient-to-b from-[#F5F1EB] to-[#EFE9DF]">
+
+  <!-- Hero banner -->
+  <div class="bg-[#F5F1EB] border-b border-[#EDE8E0]">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div>
+        <p class="text-xs uppercase tracking-[0.2em] text-[#CF4E4E] font-bold mb-1.5">Coleção</p>
+        <h1 class="text-3xl md:text-4xl font-bold text-[#2C2C2C] tracking-tight">Nossos Produtos</h1>
+        <p class="text-[#626262] mt-1 text-sm">Peças artesanais feitas com carinho para você</p>
+      </div>
+      <button
+        *ngIf="isLoggedIn"
+        (click)="onCreateProduct()"
+        class="flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#CF4E4E] hover:bg-[#B03A3A] text-white text-sm font-semibold transition-all duration-200 shadow-md hover:shadow-lg"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        Novo Produto
+      </button>
+    </div>
+  </div>
+
+  <!-- Search + sort bar -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+    <div class="bg-white rounded-2xl shadow-sm border border-[#EDE8E0] p-2 flex flex-col sm:flex-row items-stretch gap-2">
+      <div class="relative flex-1">
+        <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B6B6B7]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        <input
+          type="text"
+          [(ngModel)]="searchTerm"
+          placeholder="Buscar por nome, descrição ou categoria..."
+          class="w-full pl-11 pr-4 py-2.5 text-sm bg-transparent rounded-xl focus:outline-none focus:ring-2 focus:ring-[#CF4E4E]/30 placeholder-[#B6B6B7]"
+        />
+        <button
+          *ngIf="searchTerm"
+          (click)="removeSearch()"
+          class="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md text-[#B6B6B7] hover:text-[#CF4E4E] hover:bg-[#F5F1EB]"
+          title="Limpar busca"
+        >
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <button
+        type="button"
+        (click)="isFilterDrawerOpen = true"
+        class="lg:hidden flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#F5F1EB] hover:bg-[#EDE8E0] text-[#4A4A4A] text-sm font-semibold transition-colors"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+        </svg>
+        Filtros
+        <span *ngIf="activeFiltersCount > 0" class="bg-[#CF4E4E] text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+          {{ activeFiltersCount }}
+        </span>
+      </button>
+
+      <div class="relative shrink-0">
+        <select
+          [(ngModel)]="sortBy"
+          class="appearance-none w-full sm:w-auto pl-4 pr-10 py-2.5 text-sm bg-[#F5F1EB] hover:bg-[#EDE8E0] text-[#4A4A4A] font-semibold rounded-xl focus:outline-none focus:ring-2 focus:ring-[#CF4E4E]/30 cursor-pointer transition-colors"
+        >
+          <option value="recent">Mais recentes</option>
+          <option value="priceAsc">Menor preço</option>
+          <option value="priceDesc">Maior preço</option>
+          <option value="name">Nome A-Z</option>
+        </select>
+        <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#626262] pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <div class="grid lg:grid-cols-[280px_minmax(0,1fr)] gap-8">
+
+      <!-- ==================== SIDEBAR (desktop) ==================== -->
+      <aside class="hidden lg:block">
+        <div class="sticky top-6 space-y-1">
+          <ng-container *ngTemplateOutlet="filtersContent"></ng-container>
+        </div>
+      </aside>
+
+      <!-- ==================== PRODUCTS ==================== -->
+      <div>
+
+        <!-- Active filter chips -->
+        <div *ngIf="hasActiveFilters" class="flex flex-wrap items-center gap-2 mb-5">
+          <span class="text-xs font-semibold text-[#626262]">Ativos:</span>
+
+          <button
+            *ngIf="searchTerm.trim()"
+            (click)="removeSearch()"
+            class="inline-flex items-center gap-1.5 pl-3 pr-2 py-1.5 rounded-full bg-white border border-[#EDE8E0] text-xs font-semibold text-[#4A4A4A] hover:border-[#CF4E4E] hover:text-[#CF4E4E] transition-colors"
+          >
+            "{{ searchTerm }}"
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+
+          <button
+            *ngIf="selectedCategoriaId !== null"
+            (click)="removeCategoria()"
+            class="inline-flex items-center gap-1.5 pl-3 pr-2 py-1.5 rounded-full bg-white border border-[#EDE8E0] text-xs font-semibold text-[#4A4A4A] hover:border-[#CF4E4E] hover:text-[#CF4E4E] transition-colors"
+          >
+            {{ getCategoriaName(selectedCategoriaId) }}
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+
+          <button
+            *ngIf="priceMin !== null || priceMax !== null"
+            (click)="removePriceRange()"
+            class="inline-flex items-center gap-1.5 pl-3 pr-2 py-1.5 rounded-full bg-white border border-[#EDE8E0] text-xs font-semibold text-[#4A4A4A] hover:border-[#CF4E4E] hover:text-[#CF4E4E] transition-colors"
+          >
+            R$ {{ priceMin ?? 0 }} – R$ {{ priceMax !== null ? priceMax : '∞' }}
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+
+          <button
+            *ngFor="let estampaId of selectedEstampaIds"
+            (click)="removeEstampa(estampaId)"
+            class="inline-flex items-center gap-1.5 pl-3 pr-2 py-1.5 rounded-full bg-white border border-[#EDE8E0] text-xs font-semibold text-[#4A4A4A] hover:border-[#CF4E4E] hover:text-[#CF4E4E] transition-colors"
+          >
+            {{ getEstampaName(estampaId) }}
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+
+          <button
+            *ngFor="let materialId of selectedMaterialIds"
+            (click)="removeMaterial(materialId)"
+            class="inline-flex items-center gap-1.5 pl-3 pr-2 py-1.5 rounded-full bg-white border border-[#EDE8E0] text-xs font-semibold text-[#4A4A4A] hover:border-[#CF4E4E] hover:text-[#CF4E4E] transition-colors"
+          >
+            {{ getMaterialName(materialId) }}
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+
+          <button
+            *ngIf="showOnlyAvailable"
+            (click)="showOnlyAvailable = false"
+            class="inline-flex items-center gap-1.5 pl-3 pr-2 py-1.5 rounded-full bg-white border border-[#EDE8E0] text-xs font-semibold text-[#4A4A4A] hover:border-[#CF4E4E] hover:text-[#CF4E4E] transition-colors"
+          >
+            Apenas disponíveis
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+
+          <button
+            (click)="clearAllFilters()"
+            class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold text-[#CF4E4E] hover:underline"
+          >
+            Limpar tudo
+          </button>
+        </div>
+
+        <!-- Result count -->
+        <div *ngIf="!isLoading" class="flex items-center justify-between mb-4">
+          <p class="text-sm text-[#626262]">
+            <span class="text-[#2C2C2C] font-semibold">{{ filteredProducts.length }}</span>
+            {{ filteredProducts.length === 1 ? 'produto encontrado' : 'produtos encontrados' }}
+          </p>
+        </div>
+
+        <!-- Loading -->
+        <div *ngIf="isLoading" class="flex flex-col items-center justify-center min-h-[40vh] gap-4">
+          <div class="w-10 h-10 border-4 border-[#EDE8E0] border-t-[#CF4E4E] rounded-full animate-spin"></div>
+          <p class="text-[#626262] text-sm">Carregando produtos...</p>
+        </div>
+
+        <!-- Products grid -->
+        <div *ngIf="!isLoading && filteredProducts.length > 0"
+             class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+          <app-product-card
+            *ngFor="let product of filteredProducts"
+            [product]="product"
+            [isAdmin]="isLoggedIn"
+            (edit)="onEditProduct($event)"
+            (delete)="deleteProduct($event)"
+          ></app-product-card>
+        </div>
+
+        <!-- Empty: no products at all -->
+        <div *ngIf="!isLoading && products.length === 0"
+             class="flex flex-col items-center justify-center min-h-[40vh] gap-4 bg-white rounded-2xl border border-[#EDE8E0] p-10">
+          <div class="w-20 h-20 rounded-full bg-[#F5F1EB] flex items-center justify-center">
+            <svg class="w-9 h-9 text-[#CF4E4E] opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+            </svg>
+          </div>
+          <p class="text-[#4A4A4A] font-semibold">Nenhum produto encontrado</p>
+          <p class="text-[#626262] text-sm">Comece cadastrando seu primeiro produto!</p>
+        </div>
+
+        <!-- Empty: filtered out -->
+        <div *ngIf="!isLoading && products.length > 0 && filteredProducts.length === 0"
+             class="flex flex-col items-center justify-center min-h-[40vh] gap-3 bg-white rounded-2xl border border-[#EDE8E0] p-10">
+          <div class="w-16 h-16 rounded-full bg-[#F5F1EB] flex items-center justify-center">
+            <svg class="w-7 h-7 text-[#CF4E4E]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+          </div>
+          <p class="text-[#4A4A4A] font-semibold">Nada por aqui</p>
+          <p class="text-[#626262] text-sm text-center">Tente ajustar os filtros para ver mais opções.</p>
+          <button
+            (click)="clearAllFilters()"
+            class="mt-2 px-4 py-2 rounded-full bg-[#CF4E4E] hover:bg-[#B03A3A] text-white text-xs font-semibold transition-colors"
+          >
+            Limpar filtros
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== MOBILE FILTER DRAWER ==================== -->
+<div
+  *ngIf="isFilterDrawerOpen"
+  class="lg:hidden fixed inset-0 z-50 flex"
+  (click)="isFilterDrawerOpen = false"
+>
+  <div class="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
+  <div
+    class="relative ml-auto h-full w-full max-w-sm bg-[#FAF7F3] shadow-2xl flex flex-col animate-[slideIn_0.25s_ease-out]"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="flex items-center justify-between px-5 py-4 border-b border-[#EDE8E0] bg-white">
+      <h2 class="text-base font-bold text-[#2C2C2C]">Filtros</h2>
+      <button
+        (click)="isFilterDrawerOpen = false"
+        class="p-2 rounded-lg text-[#626262] hover:bg-[#F5F1EB]"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div class="flex-1 overflow-y-auto p-5">
+      <ng-container *ngTemplateOutlet="filtersContent"></ng-container>
+    </div>
+    <div class="border-t border-[#EDE8E0] bg-white px-5 py-3 flex gap-3">
+      <button
+        (click)="clearAllFilters()"
+        class="flex-1 py-2.5 rounded-xl bg-[#F5F1EB] hover:bg-[#EDE8E0] text-[#4A4A4A] text-sm font-semibold transition-colors"
+      >
+        Limpar
+      </button>
+      <button
+        (click)="isFilterDrawerOpen = false"
+        class="flex-1 py-2.5 rounded-xl bg-[#CF4E4E] hover:bg-[#B03A3A] text-white text-sm font-semibold transition-colors shadow-md"
+      >
+        Ver {{ filteredProducts.length }} produto{{ filteredProducts.length === 1 ? '' : 's' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== FILTERS TEMPLATE ==================== -->
+<ng-template #filtersContent>
+  <div class="bg-white rounded-2xl border border-[#EDE8E0] overflow-hidden">
+    <!-- Header -->
+    <div class="flex items-center justify-between px-5 py-4 border-b border-[#EDE8E0]">
+      <div class="flex items-center gap-2">
+        <svg class="w-4 h-4 text-[#CF4E4E]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+        </svg>
+        <h3 class="text-sm font-bold text-[#2C2C2C]">Filtros</h3>
+      </div>
+      <button
+        *ngIf="hasActiveFilters"
+        (click)="clearAllFilters()"
+        class="text-xs font-semibold text-[#CF4E4E] hover:underline"
+      >
+        Limpar
+      </button>
+    </div>
+
+    <!-- Disponibilidade -->
+    <div class="px-5 py-4 border-b border-[#EDE8E0]">
+      <label class="flex items-center justify-between cursor-pointer select-none">
+        <span class="text-sm font-semibold text-[#2C2C2C]">Apenas disponíveis</span>
+        <span class="relative">
+          <input type="checkbox" [(ngModel)]="showOnlyAvailable" class="sr-only peer"/>
+          <span class="block w-9 h-5 bg-[#EDE8E0] rounded-full peer peer-checked:bg-[#CF4E4E] transition-colors"></span>
+          <span class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-4"></span>
+        </span>
+      </label>
+    </div>
+
+    <!-- Categoria -->
+    <div class="px-5 py-4 border-b border-[#EDE8E0]">
+      <h4 class="text-xs font-bold uppercase tracking-wider text-[#626262] mb-3">Categoria</h4>
+      <div *ngIf="categorias.length === 0" class="text-xs text-[#B6B6B7]">Nenhuma cadastrada</div>
+      <div *ngIf="categorias.length > 0" class="space-y-1.5">
+        <button
+          type="button"
+          (click)="selectCategoria(null)"
+          class="w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-between"
+          [ngClass]="selectedCategoriaId === null
+            ? 'bg-[#F5F1EB] text-[#CF4E4E] font-semibold'
+            : 'text-[#4A4A4A] hover:bg-[#FAF7F3]'"
+        >
+          <span>Todas</span>
+          <svg *ngIf="selectedCategoriaId === null" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+          </svg>
+        </button>
+        <button
+          *ngFor="let categoria of categorias"
+          type="button"
+          (click)="selectCategoria(categoria.id)"
+          class="w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-between"
+          [ngClass]="selectedCategoriaId === categoria.id
+            ? 'bg-[#F5F1EB] text-[#CF4E4E] font-semibold'
+            : 'text-[#4A4A4A] hover:bg-[#FAF7F3]'"
+        >
+          <span class="truncate">{{ categoria.nome }}</span>
+          <svg *ngIf="selectedCategoriaId === categoria.id" class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Preço -->
+    <div class="px-5 py-4 border-b border-[#EDE8E0]">
+      <h4 class="text-xs font-bold uppercase tracking-wider text-[#626262] mb-3">Faixa de preço</h4>
+      <div class="grid grid-cols-2 gap-2">
+        <div class="relative">
+          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#B6B6B7] font-semibold">R$</span>
+          <input
+            type="number"
+            [(ngModel)]="priceMin"
+            min="0"
+            step="0.01"
+            placeholder="Min"
+            class="w-full pl-9 pr-2 py-2 text-sm bg-[#FAF7F3] border border-[#EDE8E0] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#CF4E4E]/30 focus:bg-white"
+          />
+        </div>
+        <div class="relative">
+          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#B6B6B7] font-semibold">R$</span>
+          <input
+            type="number"
+            [(ngModel)]="priceMax"
+            min="0"
+            step="0.01"
+            placeholder="Max"
+            class="w-full pl-9 pr-2 py-2 text-sm bg-[#FAF7F3] border border-[#EDE8E0] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#CF4E4E]/30 focus:bg-white"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Materiais -->
+    <div class="px-5 py-4 border-b border-[#EDE8E0]">
+      <div class="flex items-center justify-between mb-3">
+        <h4 class="text-xs font-bold uppercase tracking-wider text-[#626262]">Materiais</h4>
+        <span *ngIf="selectedMaterialIds.size > 0" class="text-[10px] font-semibold text-[#CF4E4E]">
+          {{ selectedMaterialIds.size }} selecionado{{ selectedMaterialIds.size === 1 ? '' : 's' }}
+        </span>
+      </div>
+      <div *ngIf="materiais.length === 0" class="text-xs text-[#B6B6B7]">Nenhum cadastrado</div>
+      <div *ngIf="materiais.length > 0" class="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto">
+        <button
+          *ngFor="let material of materiais"
+          type="button"
+          (click)="toggleMaterial(material.id)"
+          class="flex items-center gap-1.5 pr-2.5 py-1 rounded-full text-xs font-semibold border transition-all overflow-hidden"
+          [ngClass]="selectedMaterialIds.has(material.id)
+            ? 'bg-[#CF4E4E] border-[#CF4E4E] text-white'
+            : 'bg-white border-[#EDE8E0] text-[#4A4A4A] hover:border-[#CF4E4E] hover:text-[#CF4E4E]'"
+        >
+          <span *ngIf="material.imagemUrl" class="block w-6 h-6 shrink-0">
+            <img [src]="material.imagemUrl" alt="" class="w-full h-full object-cover"/>
+          </span>
+          <span *ngIf="!material.imagemUrl" class="pl-2.5 flex items-center">
+            <svg *ngIf="selectedMaterialIds.has(material.id)" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+            </svg>
+          </span>
+          <span class="py-0.5">{{ material.nome }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Estampas -->
+    <div class="px-5 py-4">
+      <div class="flex items-center justify-between mb-3">
+        <h4 class="text-xs font-bold uppercase tracking-wider text-[#626262]">Estampas</h4>
+        <span *ngIf="selectedEstampaIds.size > 0" class="text-[10px] font-semibold text-[#CF4E4E]">
+          {{ selectedEstampaIds.size }} selecionada{{ selectedEstampaIds.size === 1 ? '' : 's' }}
+        </span>
+      </div>
+      <div *ngIf="estampas.length === 0" class="text-xs text-[#B6B6B7]">Nenhuma cadastrada</div>
+      <div *ngIf="estampas.length > 0" class="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto">
+        <button
+          *ngFor="let estampa of estampas"
+          type="button"
+          (click)="toggleEstampa(estampa.id)"
+          class="flex items-center gap-1.5 pr-2.5 py-1 rounded-full text-xs font-semibold border transition-all overflow-hidden"
+          [ngClass]="selectedEstampaIds.has(estampa.id)
+            ? 'bg-[#CF4E4E] border-[#CF4E4E] text-white'
+            : 'bg-white border-[#EDE8E0] text-[#4A4A4A] hover:border-[#CF4E4E] hover:text-[#CF4E4E]'"
+        >
+          <span *ngIf="estampa.imagemUrl" class="block w-6 h-6 shrink-0">
+            <img [src]="estampa.imagemUrl" alt="" class="w-full h-full object-cover"/>
+          </span>
+          <span *ngIf="!estampa.imagemUrl" class="pl-2.5 flex items-center">
+            <svg *ngIf="selectedEstampaIds.has(estampa.id)" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+            </svg>
+          </span>
+          <span class="py-0.5">{{ estampa.nome }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</ng-template>
+
+<app-product-form-modal
+  [open]="showForm"
+  [product]="editingProduct"
+  (closed)="onCloseForm()"
+  (saved)="onSaveProduct($event)"
+></app-product-form-modal>

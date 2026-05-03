@@ -1,0 +1,773 @@
+<div
+  *ngIf="open"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+  (click)="close()"
+>
+  <div
+    class="w-full max-w-5xl bg-white rounded-3xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden"
+    (click)="$event.stopPropagation()"
+  >
+    <!-- Header -->
+    <div class="flex items-center justify-between px-7 py-5 border-b border-[#EDE8E0] bg-white">
+      <div>
+        <p class="text-xs uppercase tracking-widest text-[#B6B6B7] font-medium">
+          {{ isEditing ? 'Edição de produto' : 'Novo produto' }}
+        </p>
+        <h2 class="text-xl font-bold text-[#2C2C2C] mt-0.5">
+          {{ isEditing ? 'Atualizar informações' : 'Cadastrar produto' }}
+        </h2>
+      </div>
+      <button
+        type="button"
+        (click)="close()"
+        class="p-2 rounded-xl text-[#626262] hover:bg-[#F5F1EB] transition-colors"
+        title="Fechar"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <form
+      [formGroup]="productForm"
+      (ngSubmit)="submit()"
+      class="flex-1 overflow-y-auto scroll-shadow"
+    >
+      <div class="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] gap-0 lg:divide-x divide-[#EDE8E0]">
+
+        <!-- ============== IMAGES PANEL ============== -->
+        <section class="p-7 space-y-4 bg-[#FAF7F3]">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-sm font-bold text-[#2C2C2C]">Imagens do produto</h3>
+              <p class="text-xs text-[#B6B6B7] mt-0.5">Adicione uma ou mais fotos. A primeira será destacada.</p>
+            </div>
+            <span class="text-xs font-semibold text-[#626262] bg-white px-2.5 py-1 rounded-full border border-[#EDE8E0]">
+              {{ images.length }} {{ images.length === 1 ? 'imagem' : 'imagens' }}
+            </span>
+          </div>
+
+          <!-- Drop zone -->
+          <div
+            (dragover)="onDragOver($event)"
+            (dragleave)="onDragLeave($event)"
+            (drop)="onDrop($event)"
+            (click)="triggerFileSelect()"
+            class="relative flex flex-col items-center justify-center gap-2 px-5 py-7 rounded-2xl border-2 border-dashed cursor-pointer transition-all"
+            [ngClass]="isDragging
+              ? 'border-[#CF4E4E] bg-white'
+              : 'border-[#EDE8E0] bg-white hover:border-[#CF4E4E]/50'"
+          >
+            <div class="w-11 h-11 rounded-full bg-[#F5F1EB] flex items-center justify-center">
+              <svg class="w-5 h-5 text-[#CF4E4E]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M7 16a4 4 0 01-.88-7.9A5 5 0 0117.9 6 4.5 4.5 0 0118 15M12 12v9m-3-3l3-3 3 3"/>
+              </svg>
+            </div>
+            <p class="text-sm font-semibold text-[#2C2C2C]">Arraste suas imagens aqui</p>
+            <p class="text-xs text-[#626262]">
+              ou <span class="text-[#CF4E4E] font-semibold">clique para selecionar</span> (PNG, JPG, WEBP)
+            </p>
+            <input
+              #fileInput
+              type="file"
+              accept="image/*"
+              multiple
+              class="hidden"
+              (change)="onFileSelected($event)"
+            />
+          </div>
+
+          <!-- Image grid -->
+          <div *ngIf="images.length > 0" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div
+              *ngFor="let img of images; let i = index"
+              class="group relative aspect-square rounded-xl overflow-hidden bg-white border border-[#EDE8E0]"
+              [class.ring-2]="img.principal"
+              [class.ring-offset-2]="img.principal"
+              [class.ring-\[\#CF4E4E\]]="img.principal"
+            >
+              <img [src]="img.url" alt="Imagem do produto" class="w-full h-full object-cover"/>
+
+              <span
+                *ngIf="img.principal"
+                class="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-md bg-[#CF4E4E] text-white text-[10px] font-bold uppercase tracking-wider"
+              >
+                Capa
+              </span>
+
+              <div *ngIf="img.uploading" class="absolute inset-0 bg-white/70 flex items-center justify-center">
+                <div class="w-7 h-7 border-2 border-[#EDE8E0] border-t-[#CF4E4E] rounded-full animate-spin"></div>
+              </div>
+
+              <div
+                class="absolute inset-x-0 bottom-0 px-1.5 py-1.5 flex items-center justify-between gap-1 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <div class="flex items-center gap-1">
+                  <button
+                    type="button"
+                    (click)="moveImage(img, -1)"
+                    [disabled]="i === 0"
+                    class="p-1 rounded-md bg-white/90 hover:bg-white text-[#4A4A4A] disabled:opacity-30 disabled:cursor-not-allowed"
+                    title="Mover para cima"
+                  >
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    (click)="moveImage(img, 1)"
+                    [disabled]="i === images.length - 1"
+                    class="p-1 rounded-md bg-white/90 hover:bg-white text-[#4A4A4A] disabled:opacity-30 disabled:cursor-not-allowed"
+                    title="Mover para baixo"
+                  >
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
+                    </svg>
+                  </button>
+                </div>
+                <div class="flex items-center gap-1">
+                  <button
+                    type="button"
+                    *ngIf="!img.principal"
+                    (click)="setPrincipal(img)"
+                    class="p-1 rounded-md bg-white/90 hover:bg-white text-[#4A4A4A] hover:text-[#CF4E4E]"
+                    title="Marcar como capa"
+                  >
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.957a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.366 2.445a1 1 0 00-.364 1.118l1.287 3.957c.3.921-.755 1.688-1.54 1.118L12 15.347l-3.354 2.675c-.785.57-1.84-.197-1.539-1.118l1.286-3.957a1 1 0 00-.364-1.118L4.663 9.384c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 00.95-.69l1.286-3.957z"/>
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    (click)="removeImage(img)"
+                    class="p-1 rounded-md bg-white/90 hover:bg-[#CF4E4E] hover:text-white text-[#4A4A4A]"
+                    title="Remover"
+                  >
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============== FORM PANEL ============== -->
+        <section class="p-7 space-y-6">
+
+          <!-- Basic info -->
+          <div class="space-y-4">
+            <h3 class="text-sm font-bold text-[#2C2C2C]">Informações principais</h3>
+
+            <div>
+              <label class="block text-xs font-semibold text-[#626262] uppercase tracking-wide mb-1.5">Nome</label>
+              <input
+                type="text"
+                formControlName="name"
+                placeholder="Ex: Necessaire estampada"
+                class="w-full border border-[#EDE8E0] rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#CF4E4E] focus:border-transparent transition-shadow"
+              />
+              @if (productForm.get('name')?.invalid && productForm.get('name')?.touched) {
+                <p class="text-xs text-red-500 mt-1">O nome é obrigatório.</p>
+              }
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-[#626262] uppercase tracking-wide mb-1.5">Preço base (R$)</label>
+              <input
+                type="number"
+                formControlName="price"
+                step="0.01"
+                min="0"
+                placeholder="0,00"
+                class="w-full border border-[#EDE8E0] rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#CF4E4E] focus:border-transparent transition-shadow"
+              />
+              <p class="text-[11px] text-[#B6B6B7] mt-1">
+                Usado quando o produto não tem variações de tamanho cadastradas.
+              </p>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-[#626262] uppercase tracking-wide mb-1.5">Descrição</label>
+              <textarea
+                formControlName="descricao"
+                rows="3"
+                placeholder="Conte um pouco sobre o produto, materiais, processo..."
+                class="w-full border border-[#EDE8E0] rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#CF4E4E] focus:border-transparent transition-shadow resize-none"
+              ></textarea>
+            </div>
+
+            <label class="flex items-center gap-3 cursor-pointer select-none">
+              <div class="relative">
+                <input type="checkbox" formControlName="available" class="sr-only peer"/>
+                <div class="w-10 h-5 bg-[#EDE8E0] rounded-full peer peer-checked:bg-[#CF4E4E] transition-colors duration-200"></div>
+                <div class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 peer-checked:translate-x-5"></div>
+              </div>
+              <span class="text-sm font-medium text-[#4A4A4A]">Produto disponível para venda</span>
+            </label>
+          </div>
+
+          <!-- Tamanhos / Variações -->
+          <div class="space-y-3 pt-4 border-t border-[#EDE8E0]">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="text-sm font-bold text-[#2C2C2C]">Tamanhos e medidas</h3>
+                <p class="text-xs text-[#B6B6B7] mt-0.5">
+                  Cadastre variações de tamanho com preço próprio e medidas em centímetros.
+                </p>
+              </div>
+              <button
+                type="button"
+                (click)="addTamanho()"
+                class="text-xs font-semibold text-[#CF4E4E] hover:text-[#B03A3A]"
+              >
+                + Adicionar tamanho
+              </button>
+            </div>
+
+            <p *ngIf="tamanhos.length === 0" class="text-xs text-[#B6B6B7] bg-[#FAF7F3] border border-dashed border-[#EDE8E0] rounded-xl px-3 py-3">
+              Nenhum tamanho cadastrado. Sem variações, será usado o preço base.
+            </p>
+
+            <div *ngFor="let t of tamanhos; let i = index; trackBy: trackTamanho"
+                 class="border border-[#EDE8E0] rounded-xl p-3 bg-white space-y-3">
+              <div class="flex items-center gap-2">
+                <span class="text-[11px] font-bold uppercase tracking-wider text-[#B6B6B7]">
+                  Tamanho #{{ i + 1 }}
+                </span>
+                <div class="ml-auto flex items-center gap-1">
+                  <button
+                    type="button"
+                    (click)="moveTamanho(t.uid, -1)"
+                    [disabled]="i === 0"
+                    class="p-1 rounded-md hover:bg-[#F5F1EB] text-[#626262] disabled:opacity-30"
+                    title="Mover para cima"
+                  >
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7"/>
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    (click)="moveTamanho(t.uid, 1)"
+                    [disabled]="i === tamanhos.length - 1"
+                    class="p-1 rounded-md hover:bg-[#F5F1EB] text-[#626262] disabled:opacity-30"
+                    title="Mover para baixo"
+                  >
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    (click)="removeTamanho(t.uid)"
+                    class="p-1 rounded-md hover:bg-red-50 text-[#626262] hover:text-red-600"
+                    title="Remover tamanho"
+                  >
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="sm:col-span-1">
+                  <label class="block text-[11px] font-semibold text-[#626262] uppercase tracking-wide mb-1">Nome</label>
+                  <input
+                    type="text"
+                    [(ngModel)]="t.nome"
+                    [ngModelOptions]="{ standalone: true }"
+                    placeholder="Ex: P, M, G ou 30x40"
+                    class="w-full border border-[#EDE8E0] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#CF4E4E]"
+                  />
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-[#626262] uppercase tracking-wide mb-1">Preço (R$)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    [(ngModel)]="t.preco"
+                    [ngModelOptions]="{ standalone: true }"
+                    placeholder="0,00"
+                    class="w-full border border-[#EDE8E0] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#CF4E4E]"
+                  />
+                </div>
+              </div>
+
+              <div class="grid grid-cols-3 gap-2">
+                <div>
+                  <label class="block text-[11px] font-semibold text-[#626262] uppercase tracking-wide mb-1">Comprimento (cm)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    [(ngModel)]="t.comprimento"
+                    [ngModelOptions]="{ standalone: true }"
+                    placeholder="0"
+                    class="w-full border border-[#EDE8E0] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#CF4E4E]"
+                  />
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-[#626262] uppercase tracking-wide mb-1">Largura (cm)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    [(ngModel)]="t.largura"
+                    [ngModelOptions]="{ standalone: true }"
+                    placeholder="0"
+                    class="w-full border border-[#EDE8E0] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#CF4E4E]"
+                  />
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-[#626262] uppercase tracking-wide mb-1">Profundidade (cm)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    [(ngModel)]="t.profundidade"
+                    [ngModelOptions]="{ standalone: true }"
+                    placeholder="0"
+                    class="w-full border border-[#EDE8E0] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#CF4E4E]"
+                  />
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2 items-end">
+                <div>
+                  <label class="block text-[11px] font-semibold text-[#626262] uppercase tracking-wide mb-1">Estoque (opcional)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    [(ngModel)]="t.estoque"
+                    [ngModelOptions]="{ standalone: true }"
+                    placeholder="—"
+                    class="w-full border border-[#EDE8E0] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#CF4E4E]"
+                  />
+                </div>
+                <label class="flex items-center gap-2 cursor-pointer select-none px-3 py-2">
+                  <input
+                    type="checkbox"
+                    [(ngModel)]="t.ativo"
+                    [ngModelOptions]="{ standalone: true }"
+                    class="w-4 h-4 rounded border-[#EDE8E0] text-[#CF4E4E] focus:ring-[#CF4E4E]"
+                  />
+                  <span class="text-xs font-medium text-[#4A4A4A]">Disponível</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Categoria -->
+          <div class="space-y-3 pt-4 border-t border-[#EDE8E0]">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="text-sm font-bold text-[#2C2C2C]">Categoria</h3>
+                <p class="text-xs text-[#B6B6B7] mt-0.5">Escolha uma categoria existente ou crie uma nova.</p>
+              </div>
+              <button
+                type="button"
+                (click)="showCreateCategoria = !showCreateCategoria"
+                class="text-xs font-semibold text-[#CF4E4E] hover:text-[#B03A3A]"
+              >
+                {{ showCreateCategoria ? 'Cancelar' : '+ Nova' }}
+              </button>
+            </div>
+
+            <div *ngIf="showCreateCategoria" class="flex items-center gap-2 bg-[#F5F1EB] rounded-xl p-2">
+              <input
+                type="text"
+                [(ngModel)]="newCategoriaNome"
+                [ngModelOptions]="{ standalone: true }"
+                placeholder="Nome da nova categoria"
+                class="flex-1 bg-white border border-[#EDE8E0] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#CF4E4E]"
+              />
+              <button
+                type="button"
+                (click)="createCategoria()"
+                [disabled]="!newCategoriaNome.trim() || creatingCategoria"
+                class="px-3 py-2 rounded-lg bg-[#CF4E4E] hover:bg-[#B03A3A] disabled:opacity-50 text-white text-xs font-semibold"
+              >
+                {{ creatingCategoria ? 'Criando...' : 'Criar' }}
+              </button>
+            </div>
+
+            <div *ngIf="categorias.length > 5">
+              <input
+                type="text"
+                [(ngModel)]="categoriaSearch"
+                [ngModelOptions]="{ standalone: true }"
+                placeholder="Buscar categoria..."
+                class="w-full border border-[#EDE8E0] rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#CF4E4E]"
+              />
+            </div>
+
+            <div *ngIf="categorias.length > 0" class="flex flex-wrap gap-2 max-h-32 overflow-y-auto scroll-shadow">
+              <button
+                *ngFor="let categoria of filteredCategorias"
+                type="button"
+                (click)="selectCategoria(categoria.id)"
+                class="px-3 py-1.5 rounded-full text-xs font-semibold border transition-all"
+                [ngClass]="selectedCategoriaId === categoria.id
+                  ? 'bg-[#CF4E4E] border-[#CF4E4E] text-white shadow-sm'
+                  : 'bg-white border-[#EDE8E0] text-[#4A4A4A] hover:border-[#CF4E4E] hover:text-[#CF4E4E]'"
+              >
+                {{ categoria.nome }}
+              </button>
+              <p *ngIf="filteredCategorias.length === 0" class="text-xs text-[#B6B6B7] py-1.5">
+                Nenhuma categoria encontrada.
+              </p>
+            </div>
+            <p *ngIf="categorias.length === 0" class="text-xs text-[#B6B6B7]">
+              Nenhuma categoria cadastrada ainda.
+            </p>
+          </div>
+
+          <!-- Materiais -->
+          <div class="space-y-3 pt-4 border-t border-[#EDE8E0]">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="text-sm font-bold text-[#2C2C2C]">Materiais que compõem o produto</h3>
+                <p class="text-xs text-[#B6B6B7] mt-0.5">Aparecem como informação no produto (ex: zíper, tecido, acolchoado).</p>
+              </div>
+              <button
+                type="button"
+                (click)="showCreateMaterial = !showCreateMaterial"
+                class="text-xs font-semibold text-[#CF4E4E] hover:text-[#B03A3A]"
+              >
+                {{ showCreateMaterial ? 'Cancelar' : '+ Novo' }}
+              </button>
+            </div>
+
+            <div *ngIf="showCreateMaterial" class="bg-[#F5F1EB] rounded-xl p-3 space-y-2">
+              <div class="flex gap-3">
+                <label
+                  class="shrink-0 w-16 h-16 rounded-lg border-2 border-dashed border-[#EDE8E0] bg-white flex items-center justify-center overflow-hidden cursor-pointer hover:border-[#CF4E4E] transition-colors relative"
+                  [class.border-solid]="!!newMaterialPreview"
+                  [class.border-\[\#CF4E4E\]]="!!newMaterialPreview"
+                >
+                  <img
+                    *ngIf="newMaterialPreview"
+                    [src]="newMaterialPreview"
+                    alt=""
+                    class="w-full h-full object-cover"
+                  />
+                  <svg
+                    *ngIf="!newMaterialPreview"
+                    class="w-5 h-5 text-[#B6B6B7]"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                  </svg>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    class="hidden"
+                    (change)="onNewMaterialFileSelected($event)"
+                  />
+                  <button
+                    *ngIf="newMaterialPreview"
+                    type="button"
+                    (click)="$event.stopPropagation(); $event.preventDefault(); clearNewMaterialImage()"
+                    class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-[#CF4E4E] text-white rounded-full flex items-center justify-center shadow-sm hover:bg-[#B03A3A]"
+                    title="Remover imagem"
+                  >
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                  </button>
+                </label>
+                <div class="flex-1 grid grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    [(ngModel)]="newMaterialNome"
+                    [ngModelOptions]="{ standalone: true }"
+                    placeholder="Nome do material"
+                    class="bg-white border border-[#EDE8E0] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#CF4E4E]"
+                  />
+                  <input
+                    type="text"
+                    [(ngModel)]="newMaterialTipo"
+                    [ngModelOptions]="{ standalone: true }"
+                    placeholder="Tipo (opcional)"
+                    class="bg-white border border-[#EDE8E0] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#CF4E4E]"
+                  />
+                </div>
+              </div>
+              <button
+                type="button"
+                (click)="createMaterial()"
+                [disabled]="!newMaterialNome.trim() || creatingMaterial"
+                class="w-full py-2 rounded-lg bg-[#CF4E4E] hover:bg-[#B03A3A] disabled:opacity-50 text-white text-xs font-semibold"
+              >
+                {{ creatingMaterial ? 'Criando...' : 'Criar material' }}
+              </button>
+            </div>
+
+            <div *ngIf="materiais.length > 5">
+              <input
+                type="text"
+                [(ngModel)]="materialSearch"
+                [ngModelOptions]="{ standalone: true }"
+                placeholder="Buscar material..."
+                class="w-full border border-[#EDE8E0] rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#CF4E4E]"
+              />
+            </div>
+
+            <div *ngIf="materiais.length > 0" class="flex flex-wrap gap-2 max-h-44 overflow-y-auto scroll-shadow">
+              <button
+                *ngFor="let material of filteredMateriais"
+                type="button"
+                (click)="toggleMaterial(material.id)"
+                class="pr-3 rounded-full text-xs font-semibold border transition-all flex items-center gap-1.5 overflow-hidden"
+                [ngClass]="selectedMaterialIds.has(material.id)
+                  ? 'bg-[#CF4E4E] border-[#CF4E4E] text-white shadow-sm'
+                  : 'bg-white border-[#EDE8E0] text-[#4A4A4A] hover:border-[#CF4E4E] hover:text-[#CF4E4E]'"
+              >
+                <span
+                  *ngIf="material.imagemUrl; else materialCheck"
+                  class="block w-7 h-7 shrink-0"
+                >
+                  <img [src]="material.imagemUrl" alt="" class="w-full h-full object-cover"/>
+                </span>
+                <ng-template #materialCheck>
+                  <span class="pl-3 flex items-center">
+                    <svg
+                      *ngIf="selectedMaterialIds.has(material.id)"
+                      class="w-3 h-3"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                    </svg>
+                  </span>
+                </ng-template>
+                <span class="py-1.5 flex items-center gap-1">
+                  {{ material.nome }}
+                  <span *ngIf="material.tipo" class="opacity-70">· {{ material.tipo }}</span>
+                </span>
+                <svg
+                  *ngIf="material.imagemUrl && selectedMaterialIds.has(material.id)"
+                  class="w-3 h-3 -ml-0.5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                </svg>
+              </button>
+              <p *ngIf="filteredMateriais.length === 0" class="text-xs text-[#B6B6B7] py-1.5">
+                Nenhum material encontrado.
+              </p>
+            </div>
+            <p *ngIf="materiais.length === 0" class="text-xs text-[#B6B6B7]">
+              Nenhum material cadastrado ainda.
+            </p>
+          </div>
+
+          <!-- Estampas -->
+          <div class="space-y-3 pt-4 border-t border-[#EDE8E0]">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="text-sm font-bold text-[#2C2C2C]">Estampas</h3>
+                <p class="text-xs text-[#B6B6B7] mt-0.5">
+                  Estampas disponíveis para o cliente escolher.
+                </p>
+              </div>
+              <button
+                type="button"
+                (click)="showCreateEstampa = !showCreateEstampa"
+                class="text-xs font-semibold text-[#CF4E4E] hover:text-[#B03A3A]"
+              >
+                {{ showCreateEstampa ? 'Cancelar' : '+ Nova' }}
+              </button>
+            </div>
+
+            <div class="bg-[#FAF7F3] border border-[#EDE8E0] rounded-xl p-3 flex items-center gap-3">
+              <div class="flex-1">
+                <p class="text-xs font-semibold text-[#2C2C2C]">Quantas estampas o cliente escolhe?</p>
+                <p class="text-[11px] text-[#B6B6B7] mt-0.5">
+                  Ex: produto com 2 estampas pede que o cliente selecione duas das opções abaixo.
+                </p>
+              </div>
+              <input
+                type="number"
+                formControlName="quantidadeEstampas"
+                min="1"
+                max="10"
+                class="w-20 border border-[#EDE8E0] rounded-lg px-3 py-2 text-sm font-semibold text-center bg-white focus:outline-none focus:ring-2 focus:ring-[#CF4E4E]"
+              />
+            </div>
+
+            <div *ngIf="showCreateEstampa" class="bg-[#F5F1EB] rounded-xl p-3 space-y-2">
+              <div class="flex gap-3">
+                <label
+                  class="shrink-0 w-16 h-16 rounded-lg border-2 border-dashed border-[#EDE8E0] bg-white flex items-center justify-center overflow-hidden cursor-pointer hover:border-[#CF4E4E] transition-colors relative"
+                  [class.border-solid]="!!newEstampaPreview"
+                  [class.border-\[\#CF4E4E\]]="!!newEstampaPreview"
+                >
+                  <img
+                    *ngIf="newEstampaPreview"
+                    [src]="newEstampaPreview"
+                    alt=""
+                    class="w-full h-full object-cover"
+                  />
+                  <svg
+                    *ngIf="!newEstampaPreview"
+                    class="w-5 h-5 text-[#B6B6B7]"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                  </svg>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    class="hidden"
+                    (change)="onNewEstampaFileSelected($event)"
+                  />
+                  <button
+                    *ngIf="newEstampaPreview"
+                    type="button"
+                    (click)="$event.stopPropagation(); $event.preventDefault(); clearNewEstampaImage()"
+                    class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-[#CF4E4E] text-white rounded-full flex items-center justify-center shadow-sm hover:bg-[#B03A3A]"
+                    title="Remover imagem"
+                  >
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                  </button>
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="newEstampaNome"
+                  [ngModelOptions]="{ standalone: true }"
+                  placeholder="Nome da nova estampa"
+                  class="flex-1 bg-white border border-[#EDE8E0] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#CF4E4E]"
+                />
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-[#626262] uppercase tracking-wide mb-1">
+                  Valor adicional (R$)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  [(ngModel)]="newEstampaValorAdicional"
+                  [ngModelOptions]="{ standalone: true }"
+                  placeholder="0,00"
+                  class="w-full bg-white border border-[#EDE8E0] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#CF4E4E]"
+                />
+              </div>
+              <button
+                type="button"
+                (click)="createEstampa()"
+                [disabled]="!newEstampaNome.trim() || creatingEstampa"
+                class="w-full py-2 rounded-lg bg-[#CF4E4E] hover:bg-[#B03A3A] disabled:opacity-50 text-white text-xs font-semibold"
+              >
+                {{ creatingEstampa ? 'Criando...' : 'Criar estampa' }}
+              </button>
+            </div>
+
+            <div *ngIf="estampas.length > 5">
+              <input
+                type="text"
+                [(ngModel)]="estampaSearch"
+                [ngModelOptions]="{ standalone: true }"
+                placeholder="Buscar estampa..."
+                class="w-full border border-[#EDE8E0] rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#CF4E4E]"
+              />
+            </div>
+
+            <div *ngIf="estampas.length > 0" class="flex flex-wrap gap-2 max-h-44 overflow-y-auto scroll-shadow">
+              <button
+                *ngFor="let estampa of filteredEstampas"
+                type="button"
+                (click)="toggleEstampa(estampa.id)"
+                class="pr-3 rounded-full text-xs font-semibold border transition-all flex items-center gap-1.5 overflow-hidden"
+                [ngClass]="selectedEstampaIds.has(estampa.id)
+                  ? 'bg-[#CF4E4E] border-[#CF4E4E] text-white shadow-sm'
+                  : 'bg-white border-[#EDE8E0] text-[#4A4A4A] hover:border-[#CF4E4E] hover:text-[#CF4E4E]'"
+              >
+                <span
+                  *ngIf="estampa.imagemUrl; else estampaCheck"
+                  class="block w-7 h-7 shrink-0"
+                >
+                  <img [src]="estampa.imagemUrl" alt="" class="w-full h-full object-cover"/>
+                </span>
+                <ng-template #estampaCheck>
+                  <span class="pl-3 flex items-center">
+                    <svg
+                      *ngIf="selectedEstampaIds.has(estampa.id)"
+                      class="w-3 h-3"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                    </svg>
+                  </span>
+                </ng-template>
+                <span class="py-1.5">{{ estampa.nome }}</span>
+                <svg
+                  *ngIf="estampa.imagemUrl && selectedEstampaIds.has(estampa.id)"
+                  class="w-3 h-3 -ml-0.5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                </svg>
+              </button>
+              <p *ngIf="filteredEstampas.length === 0" class="text-xs text-[#B6B6B7] py-1.5">
+                Nenhuma estampa encontrada.
+              </p>
+            </div>
+            <p *ngIf="estampas.length === 0" class="text-xs text-[#B6B6B7]">
+              Nenhuma estampa cadastrada ainda.
+            </p>
+          </div>
+        </section>
+      </div>
+
+      <!-- Footer -->
+      <div class="sticky bottom-0 bg-white border-t border-[#EDE8E0] px-7 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div *ngIf="errorMessage" class="flex items-center gap-2 text-xs text-red-600">
+          <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M12 3a9 9 0 100 18A9 9 0 0012 3z"/>
+          </svg>
+          {{ errorMessage }}
+        </div>
+        <div class="flex items-center gap-3 sm:ml-auto">
+          <button
+            type="button"
+            (click)="close()"
+            class="px-5 py-2.5 rounded-xl bg-[#F5F1EB] hover:bg-[#EDE8E0] text-[#4A4A4A] text-sm font-semibold transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            [disabled]="isSubmitting || productForm.invalid"
+            class="px-6 py-2.5 rounded-xl bg-[#CF4E4E] hover:bg-[#B03A3A] disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-semibold transition-all duration-200 shadow-md hover:shadow-lg flex items-center gap-2"
+          >
+            <svg *ngIf="isSubmitting" class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v3m0 12v3m9-9h-3M6 12H3m15.364-6.364l-2.121 2.121M8.757 15.243l-2.121 2.121M18.364 18.364l-2.121-2.121M8.757 8.757L6.636 6.636"/>
+            </svg>
+            {{ isSubmitting ? 'Salvando...' : (isEditing ? 'Salvar alterações' : 'Cadastrar produto') }}
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>

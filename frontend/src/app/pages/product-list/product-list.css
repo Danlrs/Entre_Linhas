@@ -1,0 +1,35 @@
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+aside ::-webkit-scrollbar,
+.flex-wrap::-webkit-scrollbar {
+  width: 6px;
+}
+
+aside ::-webkit-scrollbar-track,
+.flex-wrap::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+aside ::-webkit-scrollbar-thumb,
+.flex-wrap::-webkit-scrollbar-thumb {
+  background: #ede8e0;
+  border-radius: 999px;
+}
+
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}

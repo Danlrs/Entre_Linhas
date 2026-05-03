@@ -1,0 +1,534 @@
+<div class="min-h-screen bg-gradient-to-b from-[#F5F1EB] to-[#EFE9DF]">
+
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="flex flex-col items-center justify-center min-h-screen gap-4">
+    <div class="w-10 h-10 border-4 border-[#EDE8E0] border-t-[#CF4E4E] rounded-full animate-spin"></div>
+    <p class="text-[#626262] text-sm">Carregando produto...</p>
+  </div>
+
+  <!-- Product -->
+  <div *ngIf="!isLoading && product" class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-32 lg:pb-12">
+
+    <!-- Breadcrumb -->
+    <nav class="mb-8 flex items-center gap-2 text-xs text-[#626262]">
+      <a routerLink="/" class="inline-flex items-center gap-1.5 hover:text-[#CF4E4E] transition-colors">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+        </svg>
+        Início
+      </a>
+      <svg class="w-3 h-3 text-[#B6B6B7]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+      </svg>
+      <span *ngIf="product.categoria" class="text-[#4A4A4A] font-medium">
+        {{ product.categoria.nome }}
+      </span>
+      <svg *ngIf="product.categoria" class="w-3 h-3 text-[#B6B6B7]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+      </svg>
+      <span class="text-[#2C2C2C] font-semibold truncate max-w-[40ch]">{{ product.name }}</span>
+    </nav>
+
+    <div class="grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] gap-8 lg:gap-12">
+
+      <!-- ==================== GALLERY ==================== -->
+      <section class="space-y-4">
+        <div
+          class="relative bg-white rounded-3xl overflow-hidden shadow-sm aspect-square flex items-center justify-center cursor-zoom-in group"
+          (mouseenter)="onZoomEnter()"
+          (mouseleave)="onZoomLeave()"
+          (mousemove)="onZoomMove($event)"
+          (click)="openLightbox()"
+        >
+          <img
+            [src]="currentImage"
+            [alt]="product.name || 'Produto'"
+            class="w-full h-full object-contain p-6 transition-transform duration-200"
+            [style.transform]="zoomActive ? 'scale(2)' : 'scale(1)'"
+            [style.transformOrigin]="zoomX + '% ' + zoomY + '%'"
+          />
+          <span
+            class="absolute top-5 left-5 px-3 py-1.5 rounded-full text-xs font-semibold backdrop-blur-md flex items-center gap-1.5"
+            [ngClass]="product.available
+              ? 'bg-white/80 text-[#CF4E4E]'
+              : 'bg-black/40 text-white'"
+          >
+            <span
+              class="w-1.5 h-1.5 rounded-full"
+              [ngClass]="product.available ? 'bg-[#CF4E4E]' : 'bg-white'"
+            ></span>
+            {{ product.available ? 'Disponível' : 'Indisponível' }}
+          </span>
+
+          <span class="absolute top-5 right-5 px-2.5 py-1 rounded-full bg-white/80 backdrop-blur-md text-[10px] font-bold tracking-wider uppercase text-[#626262] flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M15 11h-4m2-2v4M3 11a8 8 0 1116 0 8 8 0 01-16 0z"/>
+            </svg>
+            Ampliar
+          </span>
+
+          <ng-container *ngIf="galleryImages.length > 1">
+            <button
+              *ngIf="selectedImageIndex > 0"
+              (click)="$event.stopPropagation(); prevImage()"
+              class="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 hover:bg-white shadow-md flex items-center justify-center text-[#4A4A4A] hover:text-[#CF4E4E] transition-all"
+              title="Imagem anterior"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/>
+              </svg>
+            </button>
+            <button
+              *ngIf="selectedImageIndex < galleryImages.length - 1"
+              (click)="$event.stopPropagation(); nextImage()"
+              class="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 hover:bg-white shadow-md flex items-center justify-center text-[#4A4A4A] hover:text-[#CF4E4E] transition-all"
+              title="Próxima imagem"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
+              </svg>
+            </button>
+            <span
+              class="absolute bottom-4 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-md text-white text-[11px] font-semibold"
+            >
+              {{ selectedImageIndex + 1 }} / {{ galleryImages.length }}
+            </span>
+          </ng-container>
+        </div>
+
+        <!-- Thumbnails -->
+        <div *ngIf="galleryImages.length > 1" class="grid grid-cols-5 gap-2">
+          <button
+            *ngFor="let img of galleryImages; let i = index"
+            type="button"
+            (click)="selectImage(i)"
+            class="aspect-square rounded-xl overflow-hidden border-2 transition-all"
+            [ngClass]="selectedImageIndex === i
+              ? 'border-[#CF4E4E] shadow-md'
+              : 'border-transparent hover:border-[#EDE8E0] opacity-70 hover:opacity-100'"
+          >
+            <img [src]="img" alt="" class="w-full h-full object-cover"/>
+          </button>
+        </div>
+      </section>
+
+      <!-- ==================== INFO PANEL ==================== -->
+      <section class="lg:sticky lg:top-6 lg:self-start space-y-6">
+
+        <div>
+          <span *ngIf="product.categoria" class="inline-block text-[10px] uppercase tracking-[0.2em] text-[#CF4E4E] font-bold mb-3">
+            {{ product.categoria.nome }}
+          </span>
+          <h1 class="text-3xl md:text-4xl font-bold text-[#2C2C2C] leading-tight">
+            {{ product.name }}
+          </h1>
+          <p class="mt-4 text-4xl font-bold text-[#CF4E4E]">
+            R$ {{ priceLabel }}
+          </p>
+          <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#B6B6B7]">
+            <span *ngIf="hasTamanhos">Preço para o tamanho selecionado</span>
+            <span *ngIf="estampaAddon > 0">
+              + R$ {{ formatPrice(estampaAddon) }} estampa{{ selectedEstampas.length > 1 ? 's' : '' }}
+            </span>
+          </div>
+        </div>
+
+        <p *ngIf="product.descricao" class="text-[15px] text-[#4A4A4A] leading-relaxed">
+          {{ product.descricao }}
+        </p>
+
+        <!-- ===== Tamanho ===== -->
+        <div *ngIf="hasTamanhos" class="space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-[#2C2C2C]">Tamanho</h3>
+            <span *ngIf="selectedTamanho" class="text-xs text-[#626262] font-medium">{{ selectedTamanho.nome }}</span>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button
+              *ngFor="let t of availableTamanhos"
+              type="button"
+              (click)="selectTamanho(t.id!)"
+              class="min-w-[64px] px-4 py-2 rounded-xl text-sm font-semibold border-2 transition-all"
+              [ngClass]="selectedTamanhoId === t.id
+                ? 'border-[#CF4E4E] bg-[#CF4E4E] text-white shadow-sm'
+                : 'border-[#EDE8E0] bg-white text-[#4A4A4A] hover:border-[#CF4E4E] hover:text-[#CF4E4E]'"
+            >
+              {{ t.nome }}
+            </button>
+          </div>
+
+          <div *ngIf="selectedTamanho" class="bg-white/70 border border-[#EDE8E0] rounded-2xl p-4 grid grid-cols-3 gap-2 text-center">
+            <div *ngIf="selectedTamanho.comprimento != null">
+              <p class="text-[10px] uppercase tracking-wider text-[#B6B6B7] font-semibold">Comprimento</p>
+              <p class="text-sm font-semibold text-[#2C2C2C] mt-0.5">{{ selectedTamanho.comprimento }} cm</p>
+            </div>
+            <div *ngIf="selectedTamanho.largura != null">
+              <p class="text-[10px] uppercase tracking-wider text-[#B6B6B7] font-semibold">Largura</p>
+              <p class="text-sm font-semibold text-[#2C2C2C] mt-0.5">{{ selectedTamanho.largura }} cm</p>
+            </div>
+            <div *ngIf="selectedTamanho.profundidade != null">
+              <p class="text-[10px] uppercase tracking-wider text-[#B6B6B7] font-semibold">Profundidade</p>
+              <p class="text-sm font-semibold text-[#2C2C2C] mt-0.5">{{ selectedTamanho.profundidade }} cm</p>
+            </div>
+            <p
+              *ngIf="selectedTamanho.comprimento == null && selectedTamanho.largura == null && selectedTamanho.profundidade == null"
+              class="col-span-3 text-xs text-[#B6B6B7]"
+            >
+              Medidas não informadas para este tamanho.
+            </p>
+          </div>
+        </div>
+
+        <!-- ===== Estampas (escolha do cliente) ===== -->
+        <div *ngIf="hasEstampas" class="space-y-3">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <h3 class="text-sm font-bold text-[#2C2C2C]">
+                {{ quantidadeEstampas === 1 ? 'Estampa' : 'Estampas' }}
+              </h3>
+              <p class="text-[11px] text-[#B6B6B7] mt-0.5">
+                <ng-container *ngIf="quantidadeEstampas === 1">Escolha uma estampa.</ng-container>
+                <ng-container *ngIf="quantidadeEstampas > 1">
+                  Escolha {{ quantidadeEstampas }} estampas — podem se repetir entre as opções abaixo.
+                </ng-container>
+              </p>
+            </div>
+            <span
+              class="px-2.5 py-1 rounded-full text-[11px] font-bold"
+              [ngClass]="estampasRequiredMet()
+                ? 'bg-[#E8F5E9] text-[#2E7D32]'
+                : 'bg-[#FFF3E0] text-[#B15B00]'"
+            >
+              {{ selectedEstampaIds.length }}/{{ quantidadeEstampas }}
+            </span>
+          </div>
+
+          <div class="flex flex-wrap gap-2.5">
+            <button
+              *ngFor="let estampa of availableEstampas"
+              type="button"
+              (click)="toggleEstampa(estampa.id)"
+              [disabled]="!isEstampaSelected(estampa.id) && estampaLimitReached() && quantidadeEstampas > 1"
+              class="relative w-16 h-16 rounded-xl overflow-hidden border-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              [ngClass]="isEstampaSelected(estampa.id)
+                ? 'border-[#CF4E4E] shadow-md scale-105'
+                : 'border-[#EDE8E0] hover:border-[#CF4E4E]/60'"
+              [title]="estampa.nome + (estampa.valorAdicional && estampa.valorAdicional > 0 ? ' (+R$ ' + formatPrice(estampa.valorAdicional) + ')' : '')"
+            >
+              <img *ngIf="estampa.imagemUrl" [src]="estampa.imagemUrl" [alt]="estampa.nome" class="w-full h-full object-cover"/>
+              <div *ngIf="!estampa.imagemUrl" class="w-full h-full bg-[#F5F1EB] flex items-center justify-center text-[10px] font-semibold text-[#626262] px-1 text-center">
+                {{ estampa.nome }}
+              </div>
+              <span
+                *ngIf="estampa.valorAdicional && estampa.valorAdicional > 0"
+                class="absolute bottom-0 inset-x-0 bg-black/55 text-white text-[9px] font-bold py-0.5 text-center"
+              >
+                +{{ formatPrice(estampa.valorAdicional) }}
+              </span>
+              <span
+                *ngIf="isEstampaSelected(estampa.id)"
+                class="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#CF4E4E] text-white text-[10px] font-bold flex items-center justify-center"
+              >
+                <ng-container *ngIf="quantidadeEstampas === 1; else estampaIndex">
+                  <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                  </svg>
+                </ng-container>
+                <ng-template #estampaIndex>{{ estampaSelectionIndex(estampa.id) }}</ng-template>
+              </span>
+            </button>
+          </div>
+
+          <div *ngIf="selectedEstampas.length > 0" class="flex flex-wrap items-center gap-1.5 text-[11px]">
+            <span class="text-[#626262] font-medium">Selecionadas:</span>
+            <span
+              *ngFor="let e of selectedEstampas"
+              class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#FCEBEB] text-[#CF4E4E] font-semibold"
+            >
+              {{ e.nome }}
+              <ng-container *ngIf="e.valorAdicional && e.valorAdicional > 0">
+                · +R$ {{ formatPrice(e.valorAdicional) }}
+              </ng-container>
+            </span>
+          </div>
+        </div>
+
+        <!-- ===== Materiais (informativo) ===== -->
+        <div *ngIf="product.materiais && product.materiais.length > 0" class="space-y-3">
+          <div>
+            <h3 class="text-sm font-bold text-[#2C2C2C]">Composição</h3>
+            <p class="text-[11px] text-[#B6B6B7] mt-0.5">Materiais que compõem esta peça.</p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <span
+              *ngFor="let material of product.materiais"
+              class="inline-flex items-center gap-2 pl-1 pr-3 py-1 rounded-full border border-[#EDE8E0] bg-white text-sm text-[#4A4A4A]"
+            >
+              <span class="block w-7 h-7 rounded-full overflow-hidden bg-[#F5F1EB] shrink-0 flex items-center justify-center">
+                <img *ngIf="material.imagemUrl" [src]="material.imagemUrl" [alt]="material.nome" class="w-full h-full object-cover"/>
+                <svg *ngIf="!material.imagemUrl" class="w-3.5 h-3.5 text-[#B6B6B7]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+              </span>
+              <span class="leading-tight">
+                <span class="font-semibold">{{ material.nome }}</span>
+                <span *ngIf="material.tipo" class="block text-[10px] text-[#B6B6B7]">{{ material.tipo }}</span>
+              </span>
+            </span>
+          </div>
+        </div>
+
+        <!-- ===== CTA ===== -->
+        <div class="space-y-2 pt-3">
+          <a
+            *ngIf="product.available && canBuy"
+            [href]="getWhatsAppLink()"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="flex items-center justify-center gap-3 w-full py-4 px-6 rounded-2xl bg-[#25D366] hover:bg-[#20BA5A] text-white font-semibold text-base transition-all duration-200 shadow-lg shadow-[#25D366]/20 hover:shadow-xl hover:shadow-[#25D366]/30 hover:scale-[1.01]"
+          >
+            <svg class="w-5 h-5 shrink-0" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+            </svg>
+            Comprar via WhatsApp
+          </a>
+
+          <button
+            *ngIf="product.available && !canBuy"
+            type="button"
+            disabled
+            class="flex items-center justify-center gap-2 w-full py-4 px-6 rounded-2xl bg-[#EDE8E0] text-[#9c9c9c] font-semibold text-base cursor-not-allowed"
+            [title]="buyDisabledReason"
+          >
+            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.66 1.73-3L13.73 4a2 2 0 00-3.46 0L3.34 16c-.77 1.34.19 3 1.73 3z"/>
+            </svg>
+            {{ buyDisabledReason || 'Selecione as opções para continuar' }}
+          </button>
+
+          <!-- Share -->
+          <div class="relative">
+            <button
+              type="button"
+              (click)="toggleShareMenu()"
+              class="w-full flex items-center justify-center gap-2 py-3 px-6 rounded-2xl bg-white border border-[#EDE8E0] hover:border-[#CF4E4E] text-[#4A4A4A] hover:text-[#CF4E4E] font-semibold text-sm transition-all"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m9.032 4.026A3 3 0 1115 18a3 3 0 013.716-3.974zM15 6a3 3 0 11-6 0 3 3 0 016 0zM8.684 10.658L15 6m-6.316 6.684L15 18"/>
+              </svg>
+              Compartilhar produto
+            </button>
+
+            <div
+              *ngIf="showShareMenu"
+              class="absolute z-30 mt-2 inset-x-0 bg-white rounded-2xl shadow-xl border border-[#EDE8E0] overflow-hidden"
+            >
+              <button
+                type="button"
+                (click)="shareWhatsApp()"
+                class="w-full flex items-center gap-3 px-4 py-3 text-sm text-[#4A4A4A] hover:bg-[#F5F1EB] transition-colors text-left"
+              >
+                <span class="w-8 h-8 rounded-lg bg-[#25D366]/10 text-[#25D366] flex items-center justify-center">
+                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                  </svg>
+                </span>
+                <span class="font-semibold">WhatsApp</span>
+              </button>
+
+              <button
+                type="button"
+                (click)="shareInstagram()"
+                class="w-full flex items-center gap-3 px-4 py-3 text-sm text-[#4A4A4A] hover:bg-[#F5F1EB] transition-colors border-t border-[#EDE8E0] text-left"
+              >
+                <span class="w-8 h-8 rounded-lg bg-gradient-to-br from-[#FEDA75] via-[#D62976] to-[#4F5BD5] text-white flex items-center justify-center">
+                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
+                  </svg>
+                </span>
+                <span>
+                  <span class="block font-semibold">Instagram</span>
+                  <span class="block text-[11px] text-[#B6B6B7]">link copiado para colar no Stories/Direct</span>
+                </span>
+              </button>
+
+              <button
+                type="button"
+                (click)="copyLink()"
+                class="w-full flex items-center gap-3 px-4 py-3 text-sm text-[#4A4A4A] hover:bg-[#F5F1EB] transition-colors border-t border-[#EDE8E0] text-left"
+              >
+                <span class="w-8 h-8 rounded-lg bg-[#F5F1EB] text-[#4A4A4A] flex items-center justify-center">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                  </svg>
+                </span>
+                <span class="font-semibold">{{ copyFeedback || 'Copiar link' }}</span>
+              </button>
+            </div>
+          </div>
+
+          <p *ngIf="product.available" class="text-xs text-[#B6B6B7] text-center">
+            Você será redirecionado para iniciar a conversa
+          </p>
+
+          <div *ngIf="!product.available" class="bg-white border border-[#EDE8E0] rounded-2xl p-5 text-center space-y-1">
+            <p class="text-[#2C2C2C] text-sm font-semibold">Produto temporariamente indisponível</p>
+            <p class="text-xs text-[#626262]">Volte em breve ou entre em contato</p>
+          </div>
+        </div>
+
+        <!-- Trust signals -->
+        <div class="grid grid-cols-3 gap-3 text-center pt-2">
+          <div class="space-y-1">
+            <div class="w-8 h-8 mx-auto rounded-full bg-white border border-[#EDE8E0] flex items-center justify-center">
+              <svg class="w-3.5 h-3.5 text-[#CF4E4E]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+              </svg>
+            </div>
+            <p class="text-[10px] uppercase tracking-wider text-[#626262] font-semibold">Feito à mão</p>
+          </div>
+          <div class="space-y-1">
+            <div class="w-8 h-8 mx-auto rounded-full bg-white border border-[#EDE8E0] flex items-center justify-center">
+              <svg class="w-3.5 h-3.5 text-[#CF4E4E]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+              </svg>
+            </div>
+            <p class="text-[10px] uppercase tracking-wider text-[#626262] font-semibold">Qualidade</p>
+          </div>
+          <div class="space-y-1">
+            <div class="w-8 h-8 mx-auto rounded-full bg-white border border-[#EDE8E0] flex items-center justify-center">
+              <svg class="w-3.5 h-3.5 text-[#CF4E4E]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+              </svg>
+            </div>
+            <p class="text-[10px] uppercase tracking-wider text-[#626262] font-semibold">Atendimento</p>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ==================== RELATED ==================== -->
+    <section *ngIf="related.length > 0" class="mt-16">
+      <header class="flex items-end justify-between mb-6">
+        <div>
+          <p class="text-xs uppercase tracking-[0.2em] text-[#CF4E4E] font-bold">Você também pode gostar</p>
+          <h2 class="text-2xl md:text-3xl font-bold text-[#2C2C2C] mt-1">Produtos relacionados</h2>
+        </div>
+      </header>
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <app-product-card
+          *ngFor="let p of related"
+          [product]="p"
+          [isAdmin]="false"
+        ></app-product-card>
+      </div>
+    </section>
+  </div>
+
+  <!-- Mobile sticky CTA -->
+  <div
+    *ngIf="!isLoading && product && product.available"
+    class="lg:hidden fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-[#EDE8E0] px-4 py-3 z-40"
+  >
+    <div class="flex items-center gap-3 max-w-6xl mx-auto">
+      <div class="flex-1">
+        <p class="text-[10px] uppercase tracking-wider text-[#B6B6B7] font-semibold">Total</p>
+        <p class="text-lg font-bold text-[#CF4E4E] leading-none">R$ {{ priceLabel }}</p>
+        <p *ngIf="!canBuy" class="text-[10px] text-[#B15B00] mt-0.5">{{ buyDisabledReason }}</p>
+      </div>
+      <a
+        *ngIf="canBuy"
+        [href]="getWhatsAppLink()"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[#25D366] hover:bg-[#20BA5A] text-white font-semibold text-sm shadow-md"
+      >
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+        </svg>
+        Comprar
+      </a>
+      <button
+        *ngIf="!canBuy"
+        type="button"
+        disabled
+        class="flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[#EDE8E0] text-[#9c9c9c] font-semibold text-sm cursor-not-allowed"
+      >
+        Selecionar
+      </button>
+    </div>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="!isLoading && !product" class="flex flex-col items-center justify-center min-h-screen gap-5">
+    <div class="w-20 h-20 rounded-full bg-white flex items-center justify-center shadow-sm">
+      <svg class="w-9 h-9 text-[#CF4E4E]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+      </svg>
+    </div>
+    <p class="text-[#2C2C2C] font-semibold text-lg">Produto não encontrado</p>
+    <p class="text-[#626262] text-sm">Este produto não existe ou foi removido.</p>
+    <a routerLink="/" class="mt-2 px-5 py-2.5 rounded-full bg-[#CF4E4E] text-white text-sm font-semibold hover:bg-[#B03A3A] transition-colors shadow-md">
+      Ver todos os produtos
+    </a>
+  </div>
+</div>
+
+<!-- Click-outside catcher para o menu de share -->
+<div *ngIf="showShareMenu" class="fixed inset-0 z-20" (click)="closeShareMenu()"></div>
+
+<!-- ==================== LIGHTBOX ==================== -->
+<div
+  *ngIf="showLightbox && product"
+  class="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4"
+  (click)="closeLightbox()"
+>
+  <button
+    type="button"
+    (click)="$event.stopPropagation(); closeLightbox()"
+    class="absolute top-4 right-4 w-11 h-11 rounded-full bg-white/15 hover:bg-white/30 text-white flex items-center justify-center transition-colors"
+    title="Fechar (ESC)"
+  >
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+    </svg>
+  </button>
+
+  <button
+    *ngIf="galleryImages.length > 1"
+    type="button"
+    (click)="$event.stopPropagation(); prevImage()"
+    class="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/15 hover:bg-white/30 text-white flex items-center justify-center transition-colors"
+    title="Anterior (←)"
+  >
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/>
+    </svg>
+  </button>
+
+  <img
+    [src]="currentImage"
+    [alt]="product.name"
+    class="max-h-[88vh] max-w-[88vw] object-contain"
+    (click)="$event.stopPropagation()"
+  />
+
+  <button
+    *ngIf="galleryImages.length > 1"
+    type="button"
+    (click)="$event.stopPropagation(); nextImage()"
+    class="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/15 hover:bg-white/30 text-white flex items-center justify-center transition-colors"
+    title="Próxima (→)"
+  >
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
+    </svg>
+  </button>
+
+  <span
+    *ngIf="galleryImages.length > 1"
+    class="absolute bottom-5 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-white/15 text-white text-xs font-semibold backdrop-blur-md"
+  >
+    {{ selectedImageIndex + 1 }} / {{ galleryImages.length }}
+  </span>
+</div>

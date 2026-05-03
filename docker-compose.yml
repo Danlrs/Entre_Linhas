@@ -1,0 +1,70 @@
+services:
+
+  # ─── PostgreSQL ────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: entrelinhas_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-entrelinhas}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secret}
+      POSTGRES_DB: ${POSTGRES_DB:-entrelinhas_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-entrelinhas} -d ${POSTGRES_DB:-entrelinhas_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - entrelinhas_network
+
+  # ─── Backend (NestJS) ──────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: entrelinhas_backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: ${POSTGRES_USER:-entrelinhas}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-secret}
+      DB_NAME: ${POSTGRES_DB:-entrelinhas_db}
+      JWT_SECRET: ${JWT_SECRET:-change-this-in-production}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1d}
+    ports:
+      - "3000:3000"
+    networks:
+      - entrelinhas_network
+
+  # ─── Frontend (Angular + Nginx) ────────────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: entrelinhas_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    networks:
+      - entrelinhas_network
+
+# ─── Volumes & Networks ────────────────────────────────────────
+volumes:
+  postgres_data:
+
+networks:
+  entrelinhas_network:
+    driver: bridge

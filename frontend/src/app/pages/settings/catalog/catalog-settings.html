@@ -1,0 +1,524 @@
+<div class="space-y-5">
+
+  <!-- Tabs -->
+  <div class="bg-white rounded-2xl shadow-sm border border-[#EDE8E0] p-1.5 inline-flex flex-wrap gap-1 w-full overflow-x-auto">
+    <button
+      *ngFor="let tab of tabs"
+      type="button"
+      (click)="setTab(tab.id)"
+      class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 whitespace-nowrap"
+      [ngClass]="activeTab === tab.id
+        ? 'bg-[#CF4E4E] text-white shadow-sm'
+        : 'text-[#626262] hover:bg-[#F5F1EB]'"
+    >
+      <svg *ngIf="tab.icon === 'box'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+      </svg>
+      <svg *ngIf="tab.icon === 'tag'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5a1.99 1.99 0 011.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z"/>
+      </svg>
+      <svg *ngIf="tab.icon === 'fabric'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+      </svg>
+      <svg *ngIf="tab.icon === 'pattern'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a4 4 0 004 4h10a4 4 0 004-4V7a4 4 0 00-4-4H7a4 4 0 00-4 4z"/>
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 11h18M11 3v18"/>
+      </svg>
+      {{ tab.label }}
+    </button>
+  </div>
+
+  <!-- Toast / messages -->
+  <div
+    *ngIf="successMessage || errorMessage"
+    class="rounded-xl px-4 py-3 text-sm border flex items-center gap-2"
+    [class.bg-green-50]="!!successMessage"
+    [class.text-green-700]="!!successMessage"
+    [class.border-green-100]="!!successMessage"
+    [class.bg-red-50]="!!errorMessage"
+    [class.text-red-600]="!!errorMessage"
+    [class.border-red-100]="!!errorMessage"
+  >
+    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path *ngIf="successMessage" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+      <path *ngIf="errorMessage" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M12 3a9 9 0 100 18A9 9 0 0012 3z"/>
+    </svg>
+    {{ successMessage || errorMessage }}
+  </div>
+
+  <!-- ============= PRODUTOS ============= -->
+  <section *ngIf="activeTab === 'produtos'" class="bg-white rounded-2xl shadow-sm border border-[#EDE8E0] overflow-hidden">
+    <header class="px-6 py-5 border-b border-[#EDE8E0] flex flex-wrap gap-3 items-center justify-between">
+      <div>
+        <h2 class="text-lg font-bold text-[#2C2C2C]">Produtos</h2>
+        <p class="text-xs text-[#626262] mt-1">{{ products.length }} produto(s) cadastrado(s)</p>
+      </div>
+      <div class="flex items-center gap-2 flex-1 sm:flex-initial sm:min-w-[280px]">
+        <div class="relative flex-1">
+          <svg class="w-4 h-4 text-[#B6B6B7] absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"/>
+          </svg>
+          <input
+            type="text"
+            [(ngModel)]="searchProducts"
+            placeholder="Buscar produto..."
+            class="w-full border border-[#EDE8E0] rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#CF4E4E] focus:border-transparent"
+          />
+        </div>
+        <button
+          type="button"
+          (click)="openCreateProduct()"
+          class="px-4 py-2 rounded-lg bg-[#CF4E4E] hover:bg-[#B03A3A] text-white text-sm font-semibold transition-colors flex items-center gap-1.5 shrink-0"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+          </svg>
+          Novo
+        </button>
+      </div>
+    </header>
+
+    <div *ngIf="loading.products" class="px-6 py-10 text-center text-sm text-[#626262]">
+      Carregando produtos...
+    </div>
+
+    <div *ngIf="!loading.products && filteredProducts.length === 0" class="px-6 py-12 text-center">
+      <p class="text-sm text-[#626262]">
+        {{ products.length === 0 ? 'Você ainda não cadastrou nenhum produto.' : 'Nenhum produto encontrado para a busca.' }}
+      </p>
+    </div>
+
+    <div *ngIf="!loading.products && filteredProducts.length > 0" class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="bg-[#FAF7F2] text-left text-xs uppercase tracking-wide text-[#626262]">
+            <th class="px-6 py-3 font-semibold">Produto</th>
+            <th class="px-4 py-3 font-semibold">Categoria</th>
+            <th class="px-4 py-3 font-semibold">Preço</th>
+            <th class="px-4 py-3 font-semibold">Status</th>
+            <th class="px-4 py-3 font-semibold text-right">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            *ngFor="let product of filteredProducts"
+            class="border-t border-[#EDE8E0] hover:bg-[#FAF7F2] transition-colors"
+          >
+            <td class="px-6 py-3">
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="w-12 h-12 rounded-lg overflow-hidden bg-[#F5F1EB] shrink-0 flex items-center justify-center border border-[#EDE8E0]">
+                  <img *ngIf="productImageUrl(product)" [src]="productImageUrl(product)" [alt]="product.name" class="w-full h-full object-cover" />
+                  <svg *ngIf="!productImageUrl(product)" class="w-5 h-5 text-[#B6B6B7]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                  </svg>
+                </div>
+                <div class="min-w-0">
+                  <p class="text-sm font-semibold text-[#2C2C2C] truncate">{{ product.name }}</p>
+                  <p *ngIf="product.descricao" class="text-xs text-[#B6B6B7] truncate max-w-xs">{{ product.descricao }}</p>
+                </div>
+              </div>
+            </td>
+            <td class="px-4 py-3 text-[#626262]">
+              {{ product.categoria?.nome || '—' }}
+            </td>
+            <td class="px-4 py-3 font-semibold text-[#2C2C2C]">{{ productPriceLabel(product) }}</td>
+            <td class="px-4 py-3">
+              <span
+                class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold"
+                [class.bg-green-100]="product.available"
+                [class.text-green-700]="product.available"
+                [class.bg-gray-100]="!product.available"
+                [class.text-gray-600]="!product.available"
+              >
+                {{ product.available ? 'Disponível' : 'Indisponível' }}
+              </span>
+            </td>
+            <td class="px-4 py-3">
+              <div class="flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  (click)="openEditProduct(product)"
+                  class="p-2 rounded-lg hover:bg-[#F5F1EB] text-[#626262] hover:text-[#CF4E4E] transition-colors"
+                  title="Editar"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  (click)="askDeleteProduct(product)"
+                  class="p-2 rounded-lg hover:bg-red-50 text-[#626262] hover:text-red-600 transition-colors"
+                  title="Excluir"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"/>
+                  </svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============= CATEGORIAS ============= -->
+  <section *ngIf="activeTab === 'categorias'" class="space-y-4">
+    <div class="bg-white rounded-2xl shadow-sm border border-[#EDE8E0] p-6">
+      <h2 class="text-lg font-bold text-[#2C2C2C] mb-1">Nova categoria</h2>
+      <p class="text-xs text-[#626262] mb-4">Crie categorias para organizar os seus produtos.</p>
+
+      <form (ngSubmit)="createCategoria()" class="flex flex-col sm:flex-row gap-3">
+        <input
+          type="text"
+          [(ngModel)]="newCategoriaNome"
+          name="newCategoriaNome"
+          placeholder="Ex: Almofadas, Bolsas, Aventais..."
+          class="flex-1 border border-[#EDE8E0] rounded-lg px-3.5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#CF4E4E] focus:border-transparent"
+        />
+        <button
+          type="submit"
+          [disabled]="!newCategoriaNome.trim() || creatingCategoria"
+          class="px-5 py-3 rounded-lg bg-[#CF4E4E] hover:bg-[#B03A3A] disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors flex items-center justify-center gap-1.5"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+          </svg>
+          Adicionar
+        </button>
+      </form>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm border border-[#EDE8E0] overflow-hidden">
+      <header class="px-6 py-4 border-b border-[#EDE8E0] flex items-center justify-between">
+        <h3 class="text-sm font-bold text-[#2C2C2C]">Categorias existentes</h3>
+        <span class="text-xs text-[#626262]">{{ categorias.length }} no total</span>
+      </header>
+
+      <div *ngIf="loading.categorias" class="px-6 py-10 text-center text-sm text-[#626262]">
+        Carregando...
+      </div>
+
+      <div *ngIf="!loading.categorias && categorias.length === 0" class="px-6 py-10 text-center text-sm text-[#626262]">
+        Nenhuma categoria cadastrada ainda.
+      </div>
+
+      <ul *ngIf="!loading.categorias && categorias.length > 0">
+        <li
+          *ngFor="let categoria of categorias"
+          class="border-b border-[#EDE8E0] last:border-0 px-6 py-3 flex items-center gap-3 hover:bg-[#FAF7F2] transition-colors"
+        >
+          <span class="flex items-center justify-center w-9 h-9 rounded-lg bg-[#F5F1EB] text-[#CF4E4E] shrink-0">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5a1.99 1.99 0 011.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z"/>
+            </svg>
+          </span>
+          <input
+            type="text"
+            [value]="categoria.nome"
+            (blur)="renameCategoria(categoria, $any($event.target).value)"
+            (keyup.enter)="$any($event.target).blur()"
+            class="flex-1 bg-transparent border border-transparent hover:border-[#EDE8E0] focus:border-[#CF4E4E] rounded-lg px-3 py-2 text-sm text-[#2C2C2C] focus:outline-none focus:ring-2 focus:ring-[#CF4E4E]/20 transition-all"
+          />
+          <button
+            type="button"
+            (click)="askDeleteCategoria(categoria)"
+            class="p-2 rounded-lg hover:bg-red-50 text-[#626262] hover:text-red-600 transition-colors"
+            title="Excluir"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"/>
+            </svg>
+          </button>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============= MATERIAIS ============= -->
+  <section *ngIf="activeTab === 'materiais'" class="space-y-4">
+    <div class="bg-white rounded-2xl shadow-sm border border-[#EDE8E0] p-6">
+      <h2 class="text-lg font-bold text-[#2C2C2C] mb-1">Novo material</h2>
+      <p class="text-xs text-[#626262] mb-4">Cadastre os tecidos e materiais que você utiliza.</p>
+
+      <div class="grid grid-cols-1 md:grid-cols-[120px_1fr] gap-4">
+        <!-- Image upload -->
+        <div>
+          <label class="block text-xs font-semibold text-[#626262] uppercase tracking-wide mb-1.5">Foto</label>
+          <label class="relative w-full aspect-square rounded-xl border-2 border-dashed border-[#EDE8E0] hover:border-[#CF4E4E] transition-colors cursor-pointer flex items-center justify-center bg-[#FAF7F2] overflow-hidden">
+            <input type="file" accept="image/*" class="hidden" (change)="onNewMaterialFile($event)" />
+            <img *ngIf="newMaterialPreview" [src]="newMaterialPreview" alt="" class="w-full h-full object-cover" />
+            <div *ngIf="!newMaterialPreview" class="text-center px-2">
+              <svg class="w-6 h-6 text-[#B6B6B7] mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+              </svg>
+              <span class="text-[11px] text-[#B6B6B7]">Adicionar foto</span>
+            </div>
+            <button
+              *ngIf="newMaterialPreview"
+              type="button"
+              (click)="$event.preventDefault(); clearNewMaterialImage()"
+              class="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white text-xs flex items-center justify-center hover:bg-black/80"
+            >
+              ×
+            </button>
+          </label>
+        </div>
+
+        <form (ngSubmit)="createMaterial()" class="space-y-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-[#626262] uppercase tracking-wide mb-1.5">Nome</label>
+              <input
+                type="text"
+                [(ngModel)]="newMaterialNome"
+                name="newMaterialNome"
+                placeholder="Ex: Algodão, Linho..."
+                class="w-full border border-[#EDE8E0] rounded-lg px-3.5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#CF4E4E] focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-[#626262] uppercase tracking-wide mb-1.5">
+                Tipo <span class="text-[#B6B6B7] normal-case font-normal">(opcional)</span>
+              </label>
+              <input
+                type="text"
+                [(ngModel)]="newMaterialTipo"
+                name="newMaterialTipo"
+                placeholder="Ex: Natural, Sintético..."
+                class="w-full border border-[#EDE8E0] rounded-lg px-3.5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#CF4E4E] focus:border-transparent"
+              />
+            </div>
+          </div>
+          <div class="flex justify-end">
+            <button
+              type="submit"
+              [disabled]="!newMaterialNome.trim() || creatingMaterial"
+              class="px-5 py-2.5 rounded-lg bg-[#CF4E4E] hover:bg-[#B03A3A] disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors flex items-center gap-1.5"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+              </svg>
+              Adicionar material
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm border border-[#EDE8E0] overflow-hidden">
+      <header class="px-6 py-4 border-b border-[#EDE8E0] flex items-center justify-between">
+        <h3 class="text-sm font-bold text-[#2C2C2C]">Materiais cadastrados</h3>
+        <span class="text-xs text-[#626262]">{{ materiais.length }} no total</span>
+      </header>
+
+      <div *ngIf="loading.materiais" class="px-6 py-10 text-center text-sm text-[#626262]">
+        Carregando...
+      </div>
+
+      <div *ngIf="!loading.materiais && materiais.length === 0" class="px-6 py-10 text-center text-sm text-[#626262]">
+        Nenhum material cadastrado ainda.
+      </div>
+
+      <div *ngIf="!loading.materiais && materiais.length > 0" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 p-4">
+        <div
+          *ngFor="let material of materiais"
+          class="border border-[#EDE8E0] rounded-xl overflow-hidden flex items-center gap-3 p-3 hover:border-[#CF4E4E] transition-colors"
+        >
+          <div class="w-14 h-14 rounded-lg overflow-hidden bg-[#F5F1EB] shrink-0 flex items-center justify-center">
+            <img *ngIf="material.imagemUrl" [src]="material.imagemUrl" [alt]="material.nome" class="w-full h-full object-cover" />
+            <svg *ngIf="!material.imagemUrl" class="w-5 h-5 text-[#B6B6B7]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+            </svg>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-semibold text-[#2C2C2C] truncate">{{ material.nome }}</p>
+            <p *ngIf="material.tipo" class="text-xs text-[#626262] truncate">{{ material.tipo }}</p>
+          </div>
+          <button
+            type="button"
+            (click)="askDeleteMaterial(material)"
+            class="p-2 rounded-lg hover:bg-red-50 text-[#626262] hover:text-red-600 transition-colors"
+            title="Excluir"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============= ESTAMPAS ============= -->
+  <section *ngIf="activeTab === 'estampas'" class="space-y-4">
+    <div class="bg-white rounded-2xl shadow-sm border border-[#EDE8E0] p-6">
+      <h2 class="text-lg font-bold text-[#2C2C2C] mb-1">Nova estampa</h2>
+      <p class="text-xs text-[#626262] mb-4">Catalogue suas estampas favoritas para reutilizar nos produtos.</p>
+
+      <div class="grid grid-cols-1 md:grid-cols-[120px_1fr] gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-[#626262] uppercase tracking-wide mb-1.5">Imagem</label>
+          <label class="relative w-full aspect-square rounded-xl border-2 border-dashed border-[#EDE8E0] hover:border-[#CF4E4E] transition-colors cursor-pointer flex items-center justify-center bg-[#FAF7F2] overflow-hidden">
+            <input type="file" accept="image/*" class="hidden" (change)="onNewEstampaFile($event)" />
+            <img *ngIf="newEstampaPreview" [src]="newEstampaPreview" alt="" class="w-full h-full object-cover" />
+            <div *ngIf="!newEstampaPreview" class="text-center px-2">
+              <svg class="w-6 h-6 text-[#B6B6B7] mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+              </svg>
+              <span class="text-[11px] text-[#B6B6B7]">Adicionar foto</span>
+            </div>
+            <button
+              *ngIf="newEstampaPreview"
+              type="button"
+              (click)="$event.preventDefault(); clearNewEstampaImage()"
+              class="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white text-xs flex items-center justify-center hover:bg-black/80"
+            >
+              ×
+            </button>
+          </label>
+        </div>
+
+        <form (ngSubmit)="createEstampa()" class="space-y-3">
+          <div>
+            <label class="block text-xs font-semibold text-[#626262] uppercase tracking-wide mb-1.5">Nome</label>
+            <input
+              type="text"
+              [(ngModel)]="newEstampaNome"
+              name="newEstampaNome"
+              placeholder="Ex: Floral, Geométrica..."
+              class="w-full border border-[#EDE8E0] rounded-lg px-3.5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#CF4E4E] focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-[#626262] uppercase tracking-wide mb-1.5">
+              Valor adicional (R$)
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              [(ngModel)]="newEstampaValorAdicional"
+              name="newEstampaValorAdicional"
+              placeholder="0,00"
+              class="w-full border border-[#EDE8E0] rounded-lg px-3.5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#CF4E4E] focus:border-transparent"
+            />
+            <p class="text-[11px] text-[#B6B6B7] mt-1">
+              Esse valor é somado ao preço final quando o cliente escolhe esta estampa.
+            </p>
+          </div>
+          <div class="flex justify-end">
+            <button
+              type="submit"
+              [disabled]="!newEstampaNome.trim() || creatingEstampa"
+              class="px-5 py-2.5 rounded-lg bg-[#CF4E4E] hover:bg-[#B03A3A] disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors flex items-center gap-1.5"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+              </svg>
+              Adicionar estampa
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm border border-[#EDE8E0] overflow-hidden">
+      <header class="px-6 py-4 border-b border-[#EDE8E0] flex items-center justify-between">
+        <h3 class="text-sm font-bold text-[#2C2C2C]">Estampas cadastradas</h3>
+        <span class="text-xs text-[#626262]">{{ estampas.length }} no total</span>
+      </header>
+
+      <div *ngIf="loading.estampas" class="px-6 py-10 text-center text-sm text-[#626262]">
+        Carregando...
+      </div>
+
+      <div *ngIf="!loading.estampas && estampas.length === 0" class="px-6 py-10 text-center text-sm text-[#626262]">
+        Nenhuma estampa cadastrada ainda.
+      </div>
+
+      <div *ngIf="!loading.estampas && estampas.length > 0" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 p-4">
+        <div
+          *ngFor="let estampa of estampas"
+          class="group relative border border-[#EDE8E0] rounded-xl overflow-hidden hover:border-[#CF4E4E] transition-colors"
+        >
+          <div class="aspect-square bg-[#F5F1EB] flex items-center justify-center">
+            <img *ngIf="estampa.imagemUrl" [src]="estampa.imagemUrl" [alt]="estampa.nome" class="w-full h-full object-cover" />
+            <svg *ngIf="!estampa.imagemUrl" class="w-7 h-7 text-[#B6B6B7]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a4 4 0 004 4h10a4 4 0 004-4V7a4 4 0 00-4-4H7a4 4 0 00-4 4z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 11h18M11 3v18"/>
+            </svg>
+          </div>
+          <div class="px-3 py-2 flex items-center justify-between gap-2">
+            <div class="min-w-0">
+              <p class="text-xs font-semibold text-[#2C2C2C] truncate">{{ estampa.nome }}</p>
+              <p *ngIf="estampa.valorAdicional && estampa.valorAdicional > 0" class="text-[10px] font-semibold text-[#CF4E4E]">
+                + R$ {{ estampa.valorAdicional.toFixed(2).replace('.', ',') }}
+              </p>
+            </div>
+            <button
+              type="button"
+              (click)="askDeleteEstampa(estampa)"
+              class="p-1 rounded hover:bg-red-50 text-[#626262] hover:text-red-600 transition-colors shrink-0"
+              title="Excluir"
+            >
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- Confirm dialog -->
+<div
+  *ngIf="confirmAction"
+  class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
+  (click)="cancelConfirm()"
+>
+  <div
+    class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="flex items-start gap-3 mb-5">
+      <div class="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center shrink-0">
+        <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M12 3a9 9 0 100 18A9 9 0 0012 3z"/>
+        </svg>
+      </div>
+      <div class="flex-1">
+        <h3 class="text-base font-bold text-[#2C2C2C] mb-1">Confirmar exclusão</h3>
+        <p class="text-sm text-[#626262]">{{ confirmAction.message }}</p>
+      </div>
+    </div>
+    <div class="flex justify-end gap-2">
+      <button
+        type="button"
+        (click)="cancelConfirm()"
+        class="px-4 py-2 rounded-lg text-sm font-semibold text-[#626262] hover:bg-[#F5F1EB] transition-colors"
+      >
+        Cancelar
+      </button>
+      <button
+        type="button"
+        (click)="confirm()"
+        class="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white text-sm font-semibold transition-colors"
+      >
+        Excluir
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Product modal -->
+<app-product-form-modal
+  [open]="showProductModal"
+  [product]="editingProduct"
+  (closed)="closeProductModal()"
+  (saved)="onProductSaved($event)"
+></app-product-form-modal>

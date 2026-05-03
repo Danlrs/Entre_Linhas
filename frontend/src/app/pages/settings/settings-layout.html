@@ -1,0 +1,77 @@
+<div class="min-h-screen bg-[#F5F1EB]">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+
+    <!-- Page header -->
+    <div class="mb-8">
+      <p class="text-xs text-[#B6B6B7] uppercase tracking-widest font-medium mb-2">Configurações</p>
+      <h1 class="text-3xl sm:text-4xl font-bold text-[#2C2C2C]">Bem-vindo(a) de volta!</h1>
+      <p class="text-sm text-[#626262] mt-2">
+        Personalize sua conta e gerencie tudo do seu catálogo em um único lugar.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 lg:gap-8">
+
+      <!-- Sidebar -->
+      <aside class="lg:sticky lg:top-28 lg:self-start space-y-4">
+
+        <!-- User card -->
+        <div class="bg-white rounded-2xl shadow-sm p-5 border border-[#EDE8E0]">
+          <div class="flex items-center gap-3">
+            <span class="flex items-center justify-center w-12 h-12 rounded-full bg-[#CF4E4E] text-white text-lg font-bold shrink-0">
+              {{ initials }}
+            </span>
+            <div class="min-w-0">
+              <p class="text-xs text-[#B6B6B7] uppercase tracking-wide font-medium">Logado como</p>
+              <p class="text-sm font-semibold text-[#2C2C2C] truncate">{{ currentUser?.login }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Nav -->
+        <nav class="bg-white rounded-2xl shadow-sm border border-[#EDE8E0] overflow-hidden">
+          <ul>
+            <li *ngFor="let item of navItems; let last = last" [class.border-b]="!last" class="border-[#EDE8E0]">
+              <a
+                [routerLink]="item.route"
+                routerLinkActive="bg-[#F5F1EB] text-[#CF4E4E]"
+                #rla="routerLinkActive"
+                class="flex items-start gap-3 px-4 py-4 hover:bg-[#FAF7F2] transition-colors"
+              >
+                <span
+                  class="flex items-center justify-center w-9 h-9 rounded-lg shrink-0 transition-colors"
+                  [ngClass]="rla.isActive
+                    ? 'bg-[#CF4E4E] text-white'
+                    : 'bg-[#F5F1EB] text-[#CF4E4E]'"
+                >
+                  <svg *ngIf="item.icon === 'user'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                  </svg>
+                  <svg *ngIf="item.icon === 'box'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                  </svg>
+                </span>
+                <span class="flex-1 min-w-0">
+                  <span class="block text-sm font-semibold text-[#2C2C2C]">{{ item.label }}</span>
+                  <span class="block text-xs text-[#626262] mt-0.5 leading-snug">{{ item.description }}</span>
+                </span>
+              </a>
+            </li>
+          </ul>
+        </nav>
+
+        <a
+          routerLink="/"
+          class="block text-xs text-[#B6B6B7] hover:text-[#CF4E4E] transition-colors text-center"
+        >
+          ← Voltar para a loja
+        </a>
+      </aside>
+
+      <!-- Content -->
+      <section class="min-w-0">
+        <router-outlet></router-outlet>
+      </section>
+    </div>
+  </div>
+</div>

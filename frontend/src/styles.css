@@ -1,0 +1,38 @@
+/* You can add global styles to this file, and also import other style files */
+
+@import "tailwindcss";
+
+/* Custom color theme based on Entre Linhas logo */
+:root {
+  --color-primary: #B76E79; /* Muted rose/dark rose */
+  --color-primary-dark: #9A5A63;
+  --color-primary-light: #D4A5B0;
+  --color-secondary: #4A4A4A; /* Dark gray */
+  --color-background: #F5F1EB; /* Light beige/off-white */
+  --color-text: #2C2C2C;
+  --color-text-light: #6B6B6B;
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-primary);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary-dark);
+}

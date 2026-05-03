@@ -1,0 +1,7 @@
+{
+  "name": "entre-linhas",
+  "private": true,
+  "dependencies": {
+    "dotenv": "^17.2.3"
+  }
+}

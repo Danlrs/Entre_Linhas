@@ -1,0 +1,7 @@
+:host {
+  display: block;
+}
+
+table tbody tr:last-child {
+  border-bottom: none;
+}
