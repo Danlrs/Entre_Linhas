@@ -1,98 +1,159 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Entre Linhas
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+[English](#english) · [Português (Brasil)](#português-brasil)
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+---
 
-## Description
+## English
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+### What this project is
 
-## Project setup
+**Entre Linhas** is a full-stack web application for a small textile / handmade goods business. It combines a **public storefront** (product catalog, sizes, optional stamp choices, WhatsApp checkout flow) with an **admin area** to manage categories, materials, stamps, products, and images.
 
-```bash
-$ npm install
+The goal is a single codebase you can run locally with Docker, then deploy with a managed PostgreSQL database (e.g. Supabase), a Node API (e.g. Render), and a static Angular front end (e.g. Vercel).
+
+### Tech stack
+
+| Layer | Technology |
+|-------|------------|
+| API | [NestJS](https://nestjs.com/) 11, TypeORM, PostgreSQL |
+| Web UI | [Angular](https://angular.dev/) 21, Tailwind CSS |
+| Shared types | `shared/` (TypeScript interfaces used by both sides) |
+| DB schema & migrations | `database/` (`init.sql`, numbered SQL migrations) |
+| Container (optional) | Docker Compose (Postgres + optional app services) |
+
+### Repository layout
+
+```
+backend/     NestJS API (REST under /api)
+frontend/    Angular SPA
+database/    PostgreSQL schema and migrations
+shared/      Shared TypeScript interfaces
 ```
 
-## Compile and run the project
+### Local development
 
-```bash
-# development
-$ npm run start
+1. **Environment**  
+   Copy `.env.example` to `.env` at the repo root and fill in database and JWT values (see comments inside `.env.example`).
 
-# watch mode
-$ npm run start:dev
+2. **Database**  
+   Start Postgres (e.g. `docker compose up -d db`) or point `DB_*` in `.env` to your instance. Apply schema: run `database/init.sql` (and any `database/migrations/*.sql` you need) against your database.
 
-# production mode
-$ npm run start:prod
+3. **Backend** (from `backend/`)
+
+   ```bash
+   npm install
+   npm run start:dev
+   ```
+
+   Uses `dotenv-cli` to load `../.env`. API base path: `/api`.
+
+4. **Frontend** (from `frontend/`)
+
+   ```bash
+   npm install
+   npm start
+   ```
+
+   Default dev URL: `http://localhost:4200`. API URL is read from `frontend/src/environments/environment.ts`.
+
+### Production-oriented features (backend)
+
+- Environment validation at boot (**Zod**)
+- **JWT** access + refresh tokens, logout, server-side refresh token rows
+- **CORS** allowlist via `CORS_ORIGINS`
+- **Rate limiting** (`@nestjs/throttler`) on auth and uploads
+- **Structured logging** (Pino) and optional **Sentry**
+- **Image uploads**: validated MIME + magic bytes; optional **Supabase Storage** (public URLs stored in Postgres); otherwise local `./uploads` served by Nest
+
+See `.env.example` for variable names (`SUPABASE_*`, `DB_SSL`, throttles, etc.).
+
+### Deploy (short checklist)
+
+1. Create **Supabase** project → run SQL from `database/` → create **Storage** bucket (public read if you use public image URLs).
+2. Deploy **backend** (Dockerfile in `backend/`) with secrets matching `.env.example`.
+3. Set **`frontend/src/environments/environment.prod.ts`** `apiUrl` to your API HTTPS URL, then deploy **frontend** (production build uses file replacement for that file).
+
+Order: **database → API → front**, then set **`CORS_ORIGINS`** on the API to your front-end origin.
+
+### License
+
+Private / UNLICENSED (see `backend/package.json`). Adjust if you open-source the repo.
+
+---
+
+## Português (Brasil)
+
+### O que é este projeto
+
+**Entre Linhas** é uma aplicação web full-stack para um negócio de **artesanato / produtos têxteis**. Há uma **vitrine pública** (catálogo, tamanhos, escolha de estampas quando o produto exige, fluxo de compra com **WhatsApp**) e uma **área administrativa** para cadastrar categorias, materiais, estampas, produtos e imagens.
+
+A ideia é rodar tudo localmente com Docker e, em produção, usar PostgreSQL gerenciado (ex.: **Supabase**), API Node (ex.: **Render**) e front Angular estático (ex.: **Vercel**).
+
+### Stack técnica
+
+| Camada | Tecnologia |
+|--------|------------|
+| API | NestJS 11, TypeORM, PostgreSQL |
+| Interface | Angular 21, Tailwind CSS |
+| Tipos compartilhados | Pasta `shared/` |
+| Banco | `database/` (`init.sql` + migrações SQL numeradas) |
+| Docker (opcional) | `docker-compose.yml` (Postgres e serviços opcionais) |
+
+### Estrutura do repositório
+
+```
+backend/     API NestJS (REST sob /api)
+frontend/    SPA Angular
+database/    Esquema PostgreSQL e migrações
+shared/      Interfaces TypeScript compartilhadas
 ```
 
-## Run tests
+### Desenvolvimento local
 
-```bash
-# unit tests
-$ npm run test
+1. **Ambiente**  
+   Copie `.env.example` para `.env` na raiz e preencha banco e JWT (comentários dentro do `.env.example` guiam os campos).
 
-# e2e tests
-$ npm run test:e2e
+2. **Banco**  
+   Suba o Postgres (`docker compose up -d db`) ou aponte `DB_*` no `.env`. Aplique o esquema: execute `database/init.sql` (e as migrações em `database/migrations/` que precisar) no banco.
 
-# test coverage
-$ npm run test:cov
-```
+3. **Backend** (pasta `backend/`)
 
-## Deployment
+   ```bash
+   npm install
+   npm run start:dev
+   ```
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+   Carrega `../.env` via `dotenv-cli`. Prefixo global da API: `/api`.
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+4. **Frontend** (pasta `frontend/`)
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
+   ```bash
+   npm install
+   npm start
+   ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+   URL padrão: `http://localhost:4200`. A URL da API vem de `frontend/src/environments/environment.ts`.
 
-## Resources
+### Recursos voltados à produção (backend)
 
-Check out a few resources that may come in handy when working with NestJS:
+- Validação de variáveis de ambiente no boot (**Zod**)
+- **JWT** de acesso + refresh, logout, linhas em `refresh_tokens`
+- **CORS** restrito via `CORS_ORIGINS`
+- **Rate limit** (`@nestjs/throttler`) em login e uploads
+- **Logs estruturados** (Pino) e **Sentry** opcional
+- **Upload de imagens**: validação de MIME + assinatura; opcionalmente **Supabase Storage** (URLs públicas gravadas no Postgres); senão `./uploads` servido pelo Nest
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+Detalhes dos nomes das variáveis: `.env.example` (`SUPABASE_*`, `DB_SSL`, throttles, etc.).
 
-## Support
+### Deploy (ordem sugerida)
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+1. **Supabase**: criar projeto → rodar SQL de `database/` → criar bucket no **Storage** (leitura pública se usar URLs públicas de imagem).
+2. **Backend** (Dockerfile em `backend/`): secrets alinhados ao `.env.example`.
+3. **Frontend**: ajustar `apiUrl` em `frontend/src/environments/environment.prod.ts` para a URL HTTPS da API e fazer o deploy do build de produção.
 
-## Stay in touch
+Ordem prática: **banco → API → front**; depois configure **`CORS_ORIGINS`** na API com a origem exata do front (Vercel ou domínio próprio).
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+### Licença
 
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+Projeto privado / UNLICENSED (veja `backend/package.json`). Altere se for tornar o repositório open source.
