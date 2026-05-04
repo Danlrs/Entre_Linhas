@@ -6,7 +6,9 @@ import { resolve4 } from 'node:dns/promises';
  * sendo o hostname lógico (veja `servername` na config SSL do TypeORM).
  */
 export async function resolvePostgresHostForConnection(hostname: string): Promise<string> {
-  if (!hostname || !/supabase\.co$/i.test(hostname)) {
+  const isSupabasePg =
+    /\.supabase\.co$/i.test(hostname) || /\.pooler\.supabase\.com$/i.test(hostname);
+  if (!hostname || !isSupabasePg) {
     return hostname;
   }
   try {

@@ -63,8 +63,7 @@ import { jwtExpires } from './config/jwt-types';
         const ssl =
           env.dbSsl ?
             {
-              rejectUnauthorized: true as const,
-              // Certificado é emitido para db.*.supabase.co; com `host` em IPv4 o TLS precisa do SNI.
+              rejectUnauthorized: env.dbSslRejectUnauthorized,
               ...(logicalHost !== host ? { servername: logicalHost } : {}),
             }
           : false;

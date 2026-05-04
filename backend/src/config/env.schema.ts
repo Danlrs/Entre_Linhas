@@ -64,11 +64,20 @@ export const EnvSchema = z
     POSTGRES_PASSWORD: z.string().optional(),
     POSTGRES_DB: z.string().optional(),
 
-    /** `true|false` omitido → SSL só se DB_HOST parecer Supabase (*.supabase.co). */
+    /** `true|false` omitido → SSL se DB_HOST parecer Supabase (direto *.supabase.co ou Session pooler *.pooler.supabase.com). */
     DB_SSL: z
       .union([z.literal('true'), z.literal('false')])
       .optional()
       .transform((v) => (v === 'true' ? true : v === 'false' ? false : undefined)),
+
+    /**
+     * Verificação estrita do certificado TLS ao Postgres (`rejectUnauthorized` no `pg`).
+     * Omitido: `false` no host Session pooler (*.pooler.supabase.com) — o Node costuma falhar com
+     * `SELF_SIGNED_CERT_IN_CHAIN`; `true` nos demais hosts com SSL.
+     */
+    DB_SSL_REJECT_UNAUTHORIZED: z
+      .union([z.literal('true'), z.literal('false')])
+      .optional(),
 
     /** Supabase Storage: URLs públicas entram nos campos `imagem_url` do Postgres (grátis até o limite do plano). */
     SUPABASE_URL: z
@@ -110,7 +119,18 @@ export const EnvSchema = z
     let dbSsl: boolean;
     if (data.DB_SSL === true) dbSsl = true;
     else if (data.DB_SSL === false) dbSsl = false;
-    else dbSsl = /\.supabase\.co$/i.test(data.DB_HOST);
+    else {
+      dbSsl =
+        /\.supabase\.co$/i.test(data.DB_HOST) || /\.pooler\.supabase\.com$/i.test(data.DB_HOST);
+    }
+
+    let dbSslRejectUnauthorized: boolean;
+    if (data.DB_SSL_REJECT_UNAUTHORIZED === 'true') dbSslRejectUnauthorized = true;
+    else if (data.DB_SSL_REJECT_UNAUTHORIZED === 'false') dbSslRejectUnauthorized = false;
+    else {
+      // Pooler Supabase: cadeia TLS frequentemente não valida com o trust store padrão do Node.
+      dbSslRejectUnauthorized = !/\.pooler\.supabase\.com$/i.test(data.DB_HOST);
+    }
 
     let bucketName: string | null = null;
     if (supabaseUrl && supabaseKey) {
@@ -137,6 +157,7 @@ export const EnvSchema = z
         name: dbName,
       },
       dbSsl,
+      dbSslRejectUnauthorized,
       jwt: {
         accessSecret,
         refreshSecret,
