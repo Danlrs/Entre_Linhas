@@ -7,3 +7,5 @@ services:
     rootDir: backend
     buildCommand: npm ci --include=dev && npm run build
     startCommand: npm run start:prod
+    # Painel Render (Health Checks): use este path — prefixo global da API é /api
+    healthCheckPath: /api/health

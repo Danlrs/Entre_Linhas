@@ -67,6 +67,11 @@ import { jwtExpires } from './config/jwt-types';
           autoLoadEntities: true,
           synchronize: false,
           ssl: env.dbSsl ? { rejectUnauthorized: true } : false,
+          logging: env.nodeEnv === 'development' ? ['error', 'warn'] : ['error'],
+          extra: {
+            // Falha visível nos logs em vez de pendurar ~30s sem mensagem (Supabase / firewall).
+            connectionTimeoutMillis: 15_000,
+          },
         };
       },
     }),

@@ -15,6 +15,11 @@ async function bootstrap(): Promise<void> {
   const { getValidatedEnv } = await import('./config/env.schema');
   const env = getValidatedEnv();
 
+  // Logs síncronos no stdout — Render captura mesmo se o restante falhar antes do Pino subir.
+  console.log(
+    `[bootstrap] NODE_ENV=${env.nodeEnv} PORT=${env.port} DB_HOST=${env.db.host} ssl=${env.dbSsl}`,
+  );
+
   const { AppModule } = await import('./app.module');
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
@@ -48,8 +53,12 @@ async function bootstrap(): Promise<void> {
     credentials: true,
   });
 
-  await app.listen(env.port);
-  app.get(Logger).log(`Nest listening on port ${env.port} (prefix /${globalPrefix})`);
+  // Render: o processo precisa escutar em 0.0.0.0 e usar a porta da env PORT.
+  await app.listen(env.port, '0.0.0.0');
+  app.get(Logger).log(`Nest listening on 0.0.0.0:${env.port} (prefix /${globalPrefix})`);
 }
 
-void bootstrap();
+void bootstrap().catch((err: unknown) => {
+  console.error('[bootstrap] fatal:', err);
+  process.exit(1);
+});
