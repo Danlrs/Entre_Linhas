@@ -1,0 +1,8 @@
+# Backend web: build compila o Nest (dist/); start em produção usa dist/main.
+services:
+  - type: web
+    name: entre-linhas-backend
+    runtime: node
+    rootDir: backend
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start:prod
