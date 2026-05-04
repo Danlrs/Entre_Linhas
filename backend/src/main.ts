@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import './dns-ipv4-first';
 import './instrument';
 
 import { NestFactory } from '@nestjs/core';
