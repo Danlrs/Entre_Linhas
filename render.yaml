@@ -1,8 +1,9 @@
 # Backend web: build compila o Nest (dist/); start em produção usa dist/main.
+# Render usa NODE_ENV=production no build; npm ci omitiria devDependencies e o `nest` CLI sumiria.
 services:
   - type: web
     name: entre-linhas-backend
     runtime: node
     rootDir: backend
-    buildCommand: npm ci && npm run build
+    buildCommand: npm ci --include=dev && npm run build
     startCommand: npm run start:prod
