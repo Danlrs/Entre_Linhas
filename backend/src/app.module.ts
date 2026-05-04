@@ -15,6 +15,7 @@ import { MateriaisModule } from './materiais/materiais.module';
 import { EstampasModule } from './estampas/estampas.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { getValidatedEnv } from './config/env.schema';
+import { resolvePostgresHostForConnection } from './config/resolve-postgres-host';
 import { jwtExpires } from './config/jwt-types';
 
 @Module({
@@ -55,21 +56,30 @@ import { jwtExpires } from './config/jwt-types';
       },
     }),
     TypeOrmModule.forRootAsync({
-      useFactory: () => {
+      useFactory: async () => {
         const env = getValidatedEnv();
+        const logicalHost = env.db.host;
+        const host = await resolvePostgresHostForConnection(logicalHost);
+        const ssl =
+          env.dbSsl ?
+            {
+              rejectUnauthorized: true as const,
+              // Certificado é emitido para db.*.supabase.co; com `host` em IPv4 o TLS precisa do SNI.
+              ...(logicalHost !== host ? { servername: logicalHost } : {}),
+            }
+          : false;
         return {
-          type: 'postgres',
-          host: env.db.host,
+          type: 'postgres' as const,
+          host,
           port: env.db.port,
           username: env.db.user,
           password: env.db.password,
           database: env.db.name,
           autoLoadEntities: true,
           synchronize: false,
-          ssl: env.dbSsl ? { rejectUnauthorized: true } : false,
-          logging: env.nodeEnv === 'development' ? ['error', 'warn'] : ['error'],
+          ssl,
+          logging: env.nodeEnv === 'development' ? (['error', 'warn'] as const) : (['error'] as const),
           extra: {
-            // Falha visível nos logs em vez de pendurar ~30s sem mensagem (Supabase / firewall).
             connectionTimeoutMillis: 15_000,
           },
         };
