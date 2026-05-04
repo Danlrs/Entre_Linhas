@@ -1,12 +1,9 @@
 /**
- * Substitua `apiUrl` pela URL pública do backend em produção (Render),
- * mantendo o sufixo `/api`. Exemplo:
- *   apiUrl: 'https://entre-linhas-backend.onrender.com/api'
- *
+ * URL do Nest no Render (prefixo global `/api`). Para mudar o backend, altere só esta linha.
  * `sentryDsn` é opcional; deixe vazio se ainda não criou o projeto Sentry.
  */
 export const environment = {
   production: true,
-  apiUrl: 'https://CHANGE-ME.onrender.com/api',
+  apiUrl: 'https://entrelinhas-wj3f.onrender.com/api',
   sentryDsn: '',
 };
