@@ -14,7 +14,8 @@ function optionalJwtSecret() {
       const t = v.trim();
       return t === '' ? undefined : t;
     },
-    z.union([z.undefined(), z.string().min(16)]),
+    /** Zod v4: `union(undefined, string)` falha para ausência real no ambiente; usar `.optional()`. */
+    z.optional(z.string().min(16)),
   );
 }
 
