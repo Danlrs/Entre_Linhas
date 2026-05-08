@@ -41,7 +41,7 @@ export class ProductDetail implements OnInit, OnDestroy {
   zoomX = 50;
   zoomY = 50;
 
-  private readonly whatsappNumber = '5511999999999';
+  private readonly whatsappNumber = '5575991270779';
   private routeSub?: Subscription;
 
   constructor(

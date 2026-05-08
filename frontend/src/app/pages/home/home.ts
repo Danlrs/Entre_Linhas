@@ -29,7 +29,7 @@ export class Home implements OnInit {
   testimonials: Testimonial[] = [
     {
       name: 'Mariana Lopes',
-      role: 'Cliente desde 2023',
+      role: 'Cliente desde 2025',
       message:
         'A qualidade das peças é impressionante. Cada detalhe é feito com tanto carinho que dá pra sentir.',
       initial: 'M',
