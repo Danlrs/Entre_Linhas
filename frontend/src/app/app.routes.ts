@@ -3,7 +3,7 @@ import { Home } from './pages/home/home';
 import { ProductList } from './pages/product-list/product-list';
 import { ProductDetail } from './pages/product-detail/product-detail';
 import { Login } from './pages/login/login';
-import { Register } from './pages/register/register';
+//import { Register } from './pages/register/register';
 import { SettingsLayout } from './pages/settings/settings-layout';
 import { AccountSettings } from './pages/settings/account/account-settings';
 import { CatalogSettings } from './pages/settings/catalog/catalog-settings';
@@ -14,7 +14,7 @@ export const routes: Routes = [
   { path: 'catalogo', component: ProductList },
   { path: 'product/:id', component: ProductDetail },
   { path: 'admin', component: Login },
-  { path: 'cadastro', component: Register },
+  //{ path: 'cadastro', component: Register },
   {
     path: 'configuracoes',
     component: SettingsLayout,
