@@ -165,7 +165,7 @@
 <div *ngIf="showUserMenu" class="fixed inset-0 z-40" (click)="showUserMenu = false"></div>
 
 <!-- Decorative wrapper: needle illustrations on both sides, from navbar to footer -->
-<div class="relative overflow-hidden">
+<div class="relative overflow-hidden z-10">
 
   <!-- Left needle decoration — tiled vertically to fill full height -->
   <div
@@ -187,7 +187,7 @@
 
 </div>
 
-<footer class="bg-white border-t border-[#EDE8E0]">
+<footer class="relative z-0 bg-white border-t border-[#EDE8E0]">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
     <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
 
@@ -211,7 +211,7 @@
             <svg class="w-4 h-4 text-[#CF4E4E] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
             </svg>
-            contatoentrelinhaslrs&#64;gmail.com
+            contato.entrelinhaslrs&#64;gmail.com
           </p>
           <p class="flex items-center gap-2">
             <svg class="w-4 h-4 text-[#CF4E4E] shrink-0" fill="currentColor" viewBox="0 0 24 24">
@@ -245,3 +245,5 @@
     </div>
   </div>
 </footer>
+
+<app-whatsapp-float />

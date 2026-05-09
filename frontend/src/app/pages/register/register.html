@@ -70,9 +70,15 @@
             type="tel"
             formControlName="telefone"
             autocomplete="tel"
+            inputmode="numeric"
+            maxlength="15"
             placeholder="(11) 99999-9999"
+            (input)="onTelefoneInput($event)"
             class="w-full border border-[#EDE8E0] rounded-lg px-3.5 py-3 text-sm text-[#2C2C2C] placeholder-[#B6B6B7] focus:outline-none focus:ring-2 focus:ring-[#CF4E4E] focus:border-transparent transition-shadow"
           />
+          @if (userForm.get('telefone')?.invalid && userForm.get('telefone')?.touched) {
+            <p class="text-xs text-red-500 mt-1">Use um celular ou telefone fixo válido (DDD + número, 10 ou 11 dígitos).</p>
+          }
         </div>
 
         <!-- Erro -->

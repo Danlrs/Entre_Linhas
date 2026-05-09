@@ -6,4 +6,6 @@ export const environment = {
   production: true,
   apiUrl: 'https://entrelinhas-wj3f.onrender.com/api',
   sentryDsn: '',
+  whatsappPhoneE164: '5575991270779',
+  whatsappDefaultMessage: 'Olá! Vim pelo site Entre Linhas e gostaria de conversar.',
 };

@@ -3,6 +3,11 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { UserService, SafeUser } from '../../../services/user.service';
+import {
+  brazilPhoneOptionalValidator,
+  maskBrazilPhoneInput,
+  normalizeBrazilPhoneForApi,
+} from '../../../utils/brazil-phone';
 
 @Component({
   selector: 'app-account-settings',
@@ -34,7 +39,7 @@ export class AccountSettings implements OnInit {
     this.profileForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
       login: ['', [Validators.required, Validators.minLength(3)]],
-      telefone: [''],
+      telefone: ['', brazilPhoneOptionalValidator()],
     });
 
     this.passwordForm = this.fb.group({
@@ -62,7 +67,7 @@ export class AccountSettings implements OnInit {
         this.profileForm.patchValue({
           email: user.email,
           login: user.login,
-          telefone: user.telefone ?? '',
+          telefone: user.telefone ? maskBrazilPhoneInput(user.telefone) : '',
         });
         this.profileForm.markAsPristine();
         this.loadingProfile = false;
@@ -81,6 +86,14 @@ export class AccountSettings implements OnInit {
     });
   }
 
+  onTelefoneInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const masked = maskBrazilPhoneInput(input.value);
+    this.profileForm.get('telefone')?.setValue(masked, { emitEvent: false });
+    input.value = masked;
+    this.profileForm.get('telefone')?.markAsDirty();
+  }
+
   saveProfile(): void {
     if (this.profileForm.invalid || this.savingProfile) return;
 
@@ -88,10 +101,11 @@ export class AccountSettings implements OnInit {
     this.profileMessage = null;
 
     const { email, login, telefone } = this.profileForm.value;
+    const digits = normalizeBrazilPhoneForApi(telefone);
     const payload = {
       email,
       login,
-      telefone: typeof telefone === 'string' && telefone.trim() ? telefone.trim() : null,
+      telefone: digits ?? null,
     };
 
     this.userService.updateMe(payload).subscribe({
@@ -100,7 +114,7 @@ export class AccountSettings implements OnInit {
         this.profileForm.patchValue({
           email: user.email,
           login: user.login,
-          telefone: user.telefone ?? '',
+          telefone: user.telefone ? maskBrazilPhoneInput(user.telefone) : '',
         });
         this.profileForm.markAsPristine();
         this.savingProfile = false;

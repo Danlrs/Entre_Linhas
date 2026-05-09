@@ -250,6 +250,14 @@ export class ProductDetail implements OnInit, OnDestroy {
     }
   }
 
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    if (!this.showShareMenu) return;
+    const el = event.target as HTMLElement;
+    if (el.closest('[data-share-root]')) return;
+    this.closeShareMenu();
+  }
+
   private resolveLegacyImage(image: string): string {
     if (/^(https?:)?\/\//.test(image) || image.startsWith('/')) return image;
     return `/assets/${image}`;
@@ -392,6 +400,20 @@ export class ProductDetail implements OnInit, OnDestroy {
     return typeof window !== 'undefined' ? window.location.href : '';
   }
 
+  /** Texto curto para compartilhar com amigos (não é o fluxo de compra no número da loja). */
+  private get casualShareMessage(): string {
+    const url = this.currentUrl;
+    return `Olha esse produto que encontrei!\n\n${url}`;
+  }
+
+  /**
+   * WhatsApp “compartilhar”: sem número — abre o app/Web para o usuário escolher o contato e enviar o texto.
+   * @see https://faq.whatsapp.com/general/chats/how-to-use-click-to-chat (variante só com texto via api.whatsapp.com/send)
+   */
+  getWhatsAppShareLink(): string {
+    return `https://api.whatsapp.com/send?text=${encodeURIComponent(this.casualShareMessage)}`;
+  }
+
   getWhatsAppLink(): string {
     if (!this.product) return '';
     const parts: string[] = [];
@@ -416,40 +438,83 @@ export class ProductDetail implements OnInit, OnDestroy {
   }
 
   shareWhatsApp(): void {
-    window.open(this.getWhatsAppLink(), '_blank');
+    const url = this.getWhatsAppShareLink();
+    if (!url) return;
+    window.open(url, '_blank', 'noopener,noreferrer');
     this.closeShareMenu();
   }
 
-  shareInstagram(): void {
-    // Instagram não permite share direto via URL; copiamos o link e abrimos o app/site.
-    void this.copyLink();
-    window.open('https://www.instagram.com/', '_blank');
-    this.closeShareMenu();
+  /**
+   * Instagram não tem URL web estável como o WhatsApp; no celular usamos o menu nativo de compartilhar,
+   * onde o usuário escolhe Instagram (Direct, Stories, etc.).
+   */
+  async shareInstagram(): Promise<void> {
+    const url = this.currentUrl;
+    if (!url) return;
+
+    try {
+      if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+        await navigator.share({
+          title: this.product?.name ?? 'Produto',
+          text: 'Olha esse produto que encontrei!',
+          url,
+        });
+        this.closeShareMenu();
+        return;
+      }
+    } catch (err: unknown) {
+      const name = err instanceof DOMException ? err.name : '';
+      if (name === 'AbortError') {
+        return;
+      }
+    }
+
+    const ok = await this.writeTextToClipboard(this.casualShareMessage);
+    this.copyFeedback = ok
+      ? 'Texto copiado! Abra o Instagram e cole no Direct ou story.'
+      : 'Não foi possível copiar. Use “Copiar link” abaixo.';
+    this.cdr.detectChanges();
+    window.open('https://www.instagram.com/', '_blank', 'noopener,noreferrer');
+    setTimeout(() => {
+      this.copyFeedback = '';
+      this.closeShareMenu();
+      this.cdr.detectChanges();
+    }, ok ? 600 : 2200);
   }
 
   async copyLink(): Promise<void> {
+    const ok = await this.writeProductUrlToClipboard();
+    this.copyFeedback = ok ? 'Link copiado!' : 'Não foi possível copiar.';
+    this.cdr.detectChanges();
+    setTimeout(() => {
+      this.copyFeedback = '';
+      this.cdr.detectChanges();
+    }, ok ? 2000 : 2500);
+  }
+
+  private async writeProductUrlToClipboard(): Promise<boolean> {
+    return this.writeTextToClipboard(this.currentUrl);
+  }
+
+  private async writeTextToClipboard(text: string): Promise<boolean> {
+    if (!text) return false;
     try {
       if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(this.currentUrl);
-      } else {
-        const textarea = document.createElement('textarea');
-        textarea.value = this.currentUrl;
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textarea);
+        await navigator.clipboard.writeText(text);
+        return true;
       }
-      this.copyFeedback = 'Link copiado!';
-      setTimeout(() => {
-        this.copyFeedback = '';
-        this.cdr.detectChanges();
-      }, 2000);
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(textarea);
+      return ok;
     } catch {
-      this.copyFeedback = 'Não foi possível copiar.';
-      setTimeout(() => {
-        this.copyFeedback = '';
-        this.cdr.detectChanges();
-      }, 2500);
+      return false;
     }
   }
 

@@ -3,6 +3,11 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { RouterLink, Router } from '@angular/router';
 import { UserService } from '../../services/user.service';
+import {
+  brazilPhoneOptionalValidator,
+  maskBrazilPhoneInput,
+  normalizeBrazilPhoneForApi,
+} from '../../utils/brazil-phone';
 
 @Component({
   selector: 'app-register',
@@ -26,8 +31,15 @@ export class Register implements OnInit {
       email: ['', [Validators.required, Validators.email]],
       login: ['', Validators.required],
       password: ['', [Validators.required, Validators.minLength(6)]],
-      telefone: [''],
+      telefone: ['', brazilPhoneOptionalValidator()],
     });
+  }
+
+  onTelefoneInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const masked = maskBrazilPhoneInput(input.value);
+    this.userForm.get('telefone')?.setValue(masked, { emitEvent: false });
+    input.value = masked;
   }
 
   registerUser(): void {
@@ -37,7 +49,8 @@ export class Register implements OnInit {
     this.errorMessage = '';
 
     const { email, login, password, telefone } = this.userForm.value;
-    this.userService.registerUser({ email, login, password, telefone: telefone || undefined }).subscribe({
+    const phone = normalizeBrazilPhoneForApi(telefone);
+    this.userService.registerUser({ email, login, password, telefone: phone }).subscribe({
       next: () => {
         this.isSubmitting = false;
         this.router.navigate(['/admin']);
