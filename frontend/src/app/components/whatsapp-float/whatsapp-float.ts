@@ -11,10 +11,6 @@ import { environment } from '../../../environments/environment';
   styleUrl: './whatsapp-float.css',
 })
 export class WhatsAppFloatComponent {
-  readonly fabPx = 56;
-  readonly peekPx = 18;
-  readonly dockTranslateX = this.fabPx - this.peekPx;
-
   readonly whatsappHref = computed(() => {
     const phone = environment.whatsappPhoneE164;
     const text = environment.whatsappDefaultMessage ?? '';
@@ -26,20 +22,19 @@ export class WhatsAppFloatComponent {
   docked = signal(false);
   dragging = signal(false);
 
-  displayX = computed(() => (this.docked() ? this.dockTranslateX : this.offsetX()));
+  displayX = computed(() => (this.docked() ? 0 : this.offsetX()));
 
   private dragMoved = false;
   private dragStart = { px: 0, py: 0, ox: 0, oy: 0 };
   private pointerId: number | null = null;
   private captureEl: HTMLElement | null = null;
 
-  private readonly maxOffsetX = 120;
+  private readonly maxOffsetX = 110;
   private readonly maxOffsetYUp = 280;
   private readonly maxOffsetYDown = 40;
-  private readonly dockTriggerPx = 36;
 
   private clampX(v: number): number {
-    return Math.max(-this.maxOffsetX, Math.min(this.maxOffsetX + this.dockTranslateX, v));
+    return Math.max(-this.maxOffsetX, Math.min(this.maxOffsetX, v));
   }
 
   private clampY(v: number): number {
@@ -71,14 +66,6 @@ export class WhatsAppFloatComponent {
     if (Math.abs(dx) + Math.abs(dy) > 5) this.dragMoved = true;
 
     if (this.docked()) {
-      if (dx < -12) {
-        this.docked.set(false);
-        const nx = this.clampX(this.dockTranslateX + dx);
-        const ny = this.clampY(this.dragStart.oy + dy);
-        this.offsetX.set(nx);
-        this.offsetY.set(ny);
-        this.dragStart = { px: ev.clientX, py: ev.clientY, ox: nx, oy: ny };
-      }
       return;
     }
 
@@ -103,19 +90,14 @@ export class WhatsAppFloatComponent {
     this.pointerId = null;
 
     if (this.docked()) {
-      if (!this.dragMoved) {
-        this.docked.set(false);
-        this.offsetX.set(0);
-        this.offsetY.set(0);
-      }
       this.dragMoved = false;
       return;
     }
 
-    const ox = this.offsetX();
-    if (ox >= this.dockTriggerPx) {
+    if (this.dragMoved) {
       this.docked.set(true);
-      this.offsetX.set(this.dockTranslateX);
+      this.offsetX.set(0);
+      this.offsetY.set(0);
     }
 
     this.dragMoved = false;
