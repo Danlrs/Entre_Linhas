@@ -26,7 +26,6 @@ import { CategoriaService } from '../../services/categoria.service';
 import { EstampaService } from '../../services/estampa.service';
 import { MaterialService } from '../../services/material.service';
 import { UploadService } from '../../services/upload.service';
-import { DriveImageButton } from '../drive-image-button/drive-image-button';
 
 interface PendingImage {
   id: string;
@@ -55,7 +54,7 @@ interface PendingSize {
 @Component({
   selector: 'app-product-form-modal',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, DriveImageButton],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule],
   templateUrl: './product-form-modal.html',
   styleUrls: ['./product-form-modal.css'],
 })
@@ -492,20 +491,6 @@ export class ProductFormModal implements OnChanges {
       const principal = this.images.length === 0;
       this.images.push({ id, url, principal, ordem, uploaded: false, file });
     });
-  }
-
-  onDriveImage(files: File[], kind: 'material' | 'estampa'): void {
-    if (!files[0]) return;
-    if (kind === 'material') {
-      this.clearNewMaterialImage();
-      this.newMaterialFile = files[0];
-      this.newMaterialPreview = URL.createObjectURL(files[0]);
-    } else {
-      this.clearNewEstampaImage();
-      this.newEstampaFile = files[0];
-      this.newEstampaPreview = URL.createObjectURL(files[0]);
-    }
-    this.cdr.markForCheck();
   }
 
   removeImage(image: PendingImage): void {

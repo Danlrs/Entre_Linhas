@@ -14,6 +14,7 @@ export interface AuthUser {
   id: number;
   login: string;
   email: string;
+  nome: string;
 }
 
 export interface LoginResponse {
@@ -123,7 +124,7 @@ export class AuthService {
     return localStorage.getItem('access_token');
   }
 
-  getCurrentUser(): { id: number; login: string; email?: string } | null {
+  getCurrentUser(): { id: number; login: string; email?: string; nome?: string } | null {
     const userStr = localStorage.getItem('user');
     return userStr ? JSON.parse(userStr) : null;
   }

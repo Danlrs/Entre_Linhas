@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { createHash, randomBytes } from 'crypto';
 import * as bcrypt from 'bcrypt';
@@ -48,7 +48,14 @@ export class UserInvitationService {
   }
 
   async accept(dto: AcceptInvitationDto): Promise<{ ok: true }> {
+    if (dto.password !== dto.confirmPassword) throw new BadRequestException('As senhas não coincidem.');
     const tokenHash = hashToken(dto.token);
+    const login = dto.login.trim().toLowerCase();
+    if (!/^[a-z0-9_.]{3,50}$/.test(login)) {
+      throw new BadRequestException('Use de 3 a 50 caracteres no login: letras, números, _ ou ponto. Não use espaços.');
+    }
+    const nome = dto.nome.trim();
+    if (!nome) throw new BadRequestException('Informe seu nome.');
     await this.dataSource.transaction(async (manager) => {
       const invite = await manager.getRepository(UserInvitation).createQueryBuilder('invite')
         .setLock('pessimistic_write')
@@ -57,12 +64,12 @@ export class UserInvitationService {
       if (!invite) throw new NotFoundException('Este convite expirou ou já foi utilizado. Solicite um novo convite.');
       const users = manager.getRepository(Usuario);
       if (await users.createQueryBuilder('user')
-        .where('LOWER(user.email) = :email OR user.login = :login OR user.telefone = :telefone', {
-          email: invite.email, login: dto.login, telefone: dto.telefone,
+        .where('LOWER(user.email) = :email OR LOWER(user.login) = :login OR user.telefone = :telefone', {
+          email: invite.email, login, telefone: dto.telefone,
         }).getOne()) {
         throw new ConflictException('E-mail, login ou telefone já cadastrado.');
       }
-      const user = users.create({ email: invite.email, login: dto.login, password: await bcrypt.hash(dto.password, 10), telefone: dto.telefone, googleSubject: null });
+      const user = users.create({ email: invite.email, nome, login, password: await bcrypt.hash(dto.password, 10), telefone: dto.telefone, googleSubject: null });
       await users.save(user);
       invite.acceptedAt = new Date();
       await manager.getRepository(UserInvitation).save(invite);

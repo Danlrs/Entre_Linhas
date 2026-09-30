@@ -8,10 +8,13 @@ describe('UserService identity lookup', () => {
   const repo = { createQueryBuilder: () => query };
   const service = new UserService(repo as unknown as Repository<Usuario>);
 
-  it('trims identifiers and normalizes email without changing login case', async () => {
+  it('trims and lowercases identifiers for case-insensitive login/email lookup', async () => {
     query.getMany.mockResolvedValue([{ id: 1 }]);
     await expect(service.findByIdentifier('  Admin@Example.com  ')).resolves.toEqual({ id: 1 });
-    expect(query.where).toHaveBeenCalledWith(expect.any(String), { login: 'Admin@Example.com', email: 'admin@example.com' });
+    expect(query.where).toHaveBeenCalledWith(
+      'LOWER(user.login) = :login OR LOWER(user.email) = :email',
+      { login: 'admin@example.com', email: 'admin@example.com' },
+    );
   });
 
   it('rejects ambiguous login/email matches', async () => {

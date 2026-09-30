@@ -31,7 +31,7 @@ describe('AuthService', () => {
     const req = TestBed.inject(HttpTestingController).expectOne(`${environment.apiUrl}/auth/google`);
     expect(req.request.body).toEqual({ credential: 'google-token' });
     expect(req.request.context.get(BYPASS_AUTH_INTERCEPTOR)).toBe(true);
-    req.flush({ access_token: 'access', refresh_token: 'refresh', user: { id: 1, login: 'admin', email: 'a@example.com' } });
+    req.flush({ access_token: 'access', refresh_token: 'refresh', user: { id: 1, login: 'admin', email: 'a@example.com', nome: 'Admin' } });
     expect(service.getToken()).toBe('access');
     expect(localStorage.getItem('refresh_token')).toBe('refresh');
     expect(service.getCurrentUser()?.id).toBe(1);

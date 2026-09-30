@@ -46,8 +46,6 @@ export const EnvSchema = z
     LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
 
     GOOGLE_CLIENT_ID: z.string().default(''),
-    GOOGLE_PICKER_API_KEY: z.string().default(''),
-    GOOGLE_CLOUD_PROJECT_NUMBER: z.string().default(''),
     GMAIL_CLIENT_ID: z.string().default(''),
     GMAIL_CLIENT_SECRET: z.string().default(''),
     GMAIL_REFRESH_TOKEN: z.string().default(''),
@@ -180,8 +178,6 @@ export const EnvSchema = z
       logLevel: data.LOG_LEVEL,
       google: {
         clientId: data.GOOGLE_CLIENT_ID.trim(),
-        pickerApiKey: data.GOOGLE_PICKER_API_KEY.trim(),
-        projectNumber: data.GOOGLE_CLOUD_PROJECT_NUMBER.trim(),
       },
       gmail: {
         clientId: data.GMAIL_CLIENT_ID.trim(),

@@ -1,4 +1,4 @@
-import { IsEmail, IsString, IsOptional, MaxLength, MinLength } from 'class-validator';
+import { IsEmail, IsString, IsOptional, MaxLength, IsNotEmpty } from 'class-validator';
 
 export class UpdateUserDto {
   @IsOptional()
@@ -7,9 +7,9 @@ export class UpdateUserDto {
 
   @IsOptional()
   @IsString()
-  @MinLength(3, { message: 'O login deve ter ao menos 3 caracteres.' })
-  @MaxLength(50)
-  login?: string;
+  @IsNotEmpty({ message: 'Informe seu nome.' })
+  @MaxLength(100)
+  nome?: string;
 
   @IsOptional()
   @IsString()

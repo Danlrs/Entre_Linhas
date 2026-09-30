@@ -7,7 +7,7 @@ Este guia corresponde ao código deste repositório. As alterações foram prepa
 - **Render** executa o backend: `https://entrelinhas-wj3f.onrender.com`. As rotas da API começam com `/api`.
 - **Cloudflare Pages** entrega o frontend. O endereço informado é `https://27ebf5b9.entrelinhas-lrs.pages.dev/` — sem o ponto depois da barra.
 - **Supabase** guarda o PostgreSQL e as fotos no Storage: `https://szuohznhujtrlrlacfub.supabase.co`.
-- **Google Cloud** será usado somente para criar as credenciais que permitem login, seleção do Drive e envio via Gmail. Criar esse projeto de credenciais não move banco, frontend nem backend.
+- **Google Cloud** será usado somente para criar as credenciais de login Google e envio via Gmail. Criar esse projeto de credenciais não move banco, frontend nem backend.
 
 O login continua no NestJS. Não ative Supabase Auth para este fluxo e não cadastre um callback de autenticação do Supabase.
 
@@ -23,11 +23,14 @@ Uma migração altera a estrutura do banco existente. Ela não exige apagar tabe
 4. No repositório, abra `database/migrations/005-google-login.sql`, copie o conteúdo inteiro e cole na consulta.
 5. Clique em **Run**. O esperado é uma mensagem de sucesso, frequentemente “Success. No rows returned”.
 6. Crie outra consulta e repita com o conteúdo inteiro de `database/migrations/006-password-recovery.sql`.
-7. As duas migrações podem ser reexecutadas. Execute-as antes de publicar o backend novo.
+7. Crie outra consulta e execute `database/migrations/007-user-name-and-normalized-login.sql`. Ela preenche o nome de contas antigas com o login atual, normaliza logins para minúsculas e remove espaços. Se houver dois logins que ficariam iguais após essa normalização, a migração aborta e lista os logins que precisam de correção manual antes de tentar novamente.
+8. Execute também `backend/migrations/20260930-create-user-invitations.sql` se ainda não tiver criado a tabela de convites; selecione **Run and enable RLS** no aviso do Supabase.
+9. Execute `database/migrations/008-restrict-user-login-characters.sql` para impor no banco a mesma regra de login do cadastro.
+10. Execute as migrações antes de publicar o backend novo. As migrações 005 e 006 já aplicadas não precisam ser repetidas.
 
 **Não execute `database/init.sql` sobre o banco existente.** Ele serve para instalações novas e contém toda a estrutura inicial. Para esta atualização, use somente as migrações 005 e 006.
 
-A migração 005 adiciona a coluna opcional `google_subject` à tabela `usuarios`. A migração 006 cria `password_resets`, onde ficam os hashes de recuperação, expiração e contadores. Ela também habilita RLS e remove acesso público a essa tabela; o NestJS continua acessando pelo usuário PostgreSQL privado já configurado.
+A migração 005 adiciona a coluna opcional `google_subject` à tabela `usuarios`. A migração 006 cria `password_resets`, onde ficam os hashes de recuperação, expiração e contadores. Ela também habilita RLS e remove acesso público a essa tabela; o NestJS continua acessando pelo usuário PostgreSQL privado já configurado. A migração 007 adiciona `nome`, preenche contas existentes com o login atual e impõe login em minúsculas e sem espaços. A migração 008 permite apenas letras sem acento, números, `_` e `.`, entre 3 e 50 caracteres; se encontrar logins antigos incompatíveis, aborta e os lista para correção manual antes de tentar novamente.
 
 Para conferir sem revelar dados de usuários, execute:
 
@@ -62,15 +65,15 @@ O Supabase possui limite por arquivo e cota total de armazenamento. Comprimir um
 2. No seletor de projeto no topo, escolha **New project / Novo projeto**.
 3. Use um nome como `Entre Linhas Integracoes` e clique em **Create / Criar**.
 4. Selecione esse projeto depois de criado. Não crie VM, Cloud Run ou banco no Google.
-5. Abra **APIs & Services → Library** e habilite, uma por vez: **Google Drive API**, **Google Picker API** e **Gmail API**.
+5. Abra **APIs & Services → Library** e habilite a **Gmail API**. O login usa Google Identity Services; a importação de fotos pelo Picker do Drive foi removida.
 6. Abra **Google Auth Platform**. Se aparecer **Get started**, inicie a configuração.
 7. Em **Branding**, informe `Entre Linhas`, o e-mail de suporte e seu contato de desenvolvedor.
-8. Em **Audience**, escolha **External** para contas Gmail comuns. Enquanto estiver em **Testing**, adicione como usuários de teste o Gmail remetente e as contas que testarão login e Drive.
-9. Em **Data Access**, adicione os escopos `https://www.googleapis.com/auth/drive.file` e `https://www.googleapis.com/auth/gmail.send`. O escopo de envio é para a autorização do remetente; o site não pede acesso ao Gmail dos usuários.
+8. Em **Audience**, escolha **External** para contas Gmail comuns. Enquanto estiver em **Testing**, adicione como usuários de teste o Gmail remetente e as contas que testarão login.
+9. Em **Data Access**, adicione o escopo `https://www.googleapis.com/auth/gmail.send`. Esse escopo é para a autorização do remetente; o site não pede acesso ao Gmail dos usuários.
 
 Os nomes dos menus podem aparecer traduzidos. `gmail.send` autoriza envio de mensagens, sem solicitar leitura da caixa postal. [Escopos da Gmail API](https://developers.google.com/workspace/gmail/api/auth/scopes).
 
-## 5. Crie o cliente OAuth do site: login e Drive
+## 5. Crie o cliente OAuth do site: login Google
 
 1. Abra **Google Auth Platform → Clients → Create client** (em algumas interfaces, **APIs & Services → Credentials → Create credentials → OAuth client ID**).
 2. Tipo: **Web application / Aplicativo da Web**.
@@ -90,16 +93,11 @@ Cadastre a segunda origem somente após confirmá-la como endereço principal; `
 
 O backend verifica o token com a biblioteca oficial e associa a conta pelo identificador estável do Google. O primeiro vínculo é feito após entrar com senha, em Configurações → Conta. Uma conta Google desconhecida não cria um administrador automaticamente. [Validação de identidade](https://developers.google.com/identity/gsi/web/guides/verify-google-id-token).
 
-## 6. Crie a chave do seletor do Drive
+## 6. Fotos são enviadas pelo dispositivo
 
-1. Abra **APIs & Services → Credentials → Create credentials → API key**.
-2. Edite a chave criada. Em restrições de aplicativo, selecione **Websites / HTTP referrers**.
-3. Adicione `https://27ebf5b9.entrelinhas-lrs.pages.dev/*`, o endereço principal confirmado com `/*` e, se necessário, `http://localhost:4200/*`.
-4. Restrinja as APIs à **Google Picker API** e à **Google Drive API**. Salve.
-5. Essa chave será `GOOGLE_PICKER_API_KEY` no Render.
-6. Abra as informações do projeto e copie **Project number / Número do projeto**, composto de dígitos. Será `GOOGLE_CLOUD_PROJECT_NUMBER`. Não use o nome nem o ID textual do projeto.
+O seletor do Drive foi removido porque o navegador estava abrindo uma nova sessão Google e exibindo miniaturas inconsistentes. Não crie chave de API para o Picker, não habilite Google Drive API/Picker API para fotos e não configure `GOOGLE_PICKER_API_KEY` nem `GOOGLE_CLOUD_PROJECT_NUMBER` no Render. Se essas variáveis ou APIs já foram configuradas, pode deixá-las sem uso ou removê-las; o login Google continua usando `GOOGLE_CLIENT_ID`.
 
-O client ID, a chave Picker e o número devem pertencer ao mesmo projeto. Eles são identificadores públicos enviados ao navegador. A chave deve continuar restrita aos seus sites. [Configuração do Picker](https://developers.google.com/workspace/drive/picker/guides/web-picker-sample).
+No formulário de produto, arraste as fotos ou use **clique para escolher**. Para uma foto guardada no Drive, sincronize uma pasta pelo Drive para computador ou baixe a imagem e escolha o arquivo local. O site comprime a imagem e a envia para o Supabase como nos demais uploads, sem pedir login do Google a cada produto.
 
 ## 7. Autorize o Gmail remetente
 
@@ -129,7 +127,7 @@ Use suas próprias credenciais: com as credenciais padrão do Playground, os ref
 
 Enquanto o app OAuth externo estiver em **Testing**, o refresh token com escopo Gmail normalmente expira em sete dias. Para operação contínua, conclua as exigências exibidas em **Audience / Verification Center**, publique o app OAuth e gere novamente a autorização do remetente. Publicar o status do app não conclui automaticamente eventual verificação de escopos sensíveis. Tokens também podem ser revogados pelo proprietário. [Validade dos tokens Google](https://developers.google.com/identity/protocols/oauth2#expiration).
 
-Os destinatários dos códigos não precisam autorizar Gmail nem ser usuários de teste: apenas a conta remetente autoriza o envio. Login e Drive têm seus próprios consentimentos.
+Os destinatários dos códigos e convites não precisam autorizar Gmail nem ser usuários de teste: apenas a conta remetente autoriza o envio. Login Google tem seu próprio consentimento.
 
 ## 8. Configure as variáveis no Render
 
@@ -137,8 +135,6 @@ Abra **Render → serviço entrelinhas-wj3f → Environment**. Preserve as vari�
 
 ```dotenv
 GOOGLE_CLIENT_ID=ID_DO_CLIENTE_ENTRE_LINHAS_WEB.apps.googleusercontent.com
-GOOGLE_PICKER_API_KEY=CHAVE_RESTRITA_DO_PICKER
-GOOGLE_CLOUD_PROJECT_NUMBER=NUMERO_DO_PROJETO
 
 GMAIL_CLIENT_ID=ID_DO_CLIENTE_GMAIL_BACKEND.apps.googleusercontent.com
 GMAIL_CLIENT_SECRET=SEGREDO_DO_CLIENTE_GMAIL_BACKEND
@@ -190,25 +186,18 @@ Nenhuma variável secreta precisa ser colocada na Cloudflare Pages para esses re
 
 **Recuperação:** clique em **Esqueci minha senha**, informe o e-mail de uma conta cadastrada e aguarde o código. Confira remetente e spam. Digite os seis números, crie uma nova senha de pelo menos oito caracteres e volte ao login. Teste a nova senha e confirme que a antiga deixou de funcionar. Um código usado ou expirado deve ser recusado. E-mails não cadastrados recebem a mesma resposta na tela, mas não geram mensagem.
 
-**Convites:** em **Configurações → Usuários**, envie um convite para um e-mail ainda não cadastrado. Confirme que ele recebe o link, tente abrir novamente o mesmo link após concluir o cadastro e confirme que ele já não pode ser usado. A pessoa deve informar login, senha e telefone; o e-mail do formulário deve aparecer travado no endereço destinatário. O link `/cadastro/convite` sem um token válido não permite criar uma conta.
+**Convites:** em **Configurações → Usuários**, envie um convite para um e-mail ainda não cadastrado. Confirme que ele recebe o link, tente abrir novamente o mesmo link após concluir o cadastro e confirme que ele já não pode ser usado. A pessoa informa nome, login, senha com confirmação e telefone; o e-mail do formulário fica travado no endereço destinatário. O login é salvo em minúsculas, sem espaços, e não pode ser alterado nas configurações. O link `/cadastro/convite` sem um token válido não permite criar uma conta.
 
 O código dura dez minutos e admite cinco tentativas. Reenvios têm intervalo mínimo de um minuto e cota de cinco por conta por hora. Depois da validação, o token de redefinição dura mais dez minutos e só pode ser usado uma vez. Ele permanece apenas na memória da tela; ao recarregar, recomece o fluxo. Ao redefinir a senha, as sessões de refresh anteriores são revogadas. Tokens de acesso já emitidos expiram no prazo configurado em `JWT_ACCESS_EXPIRES_IN` (padrão quinze minutos).
 
-**Fotos:** teste uma foto grande do celular, um PNG e uma imagem do Drive. No botão **Foto do Google Drive → Escolher**, o seletor abre diretamente na visualização de imagens próprias; pastas e documentos, incluindo arquivos do Classroom, ficam fora da lista. Selecione uma ou mais fotos, conforme o campo permitir. Salve o produto, material ou estampa. Confira no Storage que o arquivo novo é `.webp` e ocupa até o alvo configurado. O arquivo original não é alterado. As fotos são reduzidas para até 2048 pixels no lado maior e podem diminuir mais para atingir o alvo. Metadados são removidos; GIFs/animações ficam estáticos. JPEG, PNG, WebP, AVIF, GIF, TIFF, SVG e HEIC/HEIF são tratados pelo fluxo; BMP depende da conversão no navegador. Um arquivo corrompido, RAW proprietário ou formato sem decodificador ainda pode falhar. Não há como garantir literalmente qualquer arquivo como imagem.
+**Fotos:** teste uma foto grande do celular, um PNG e, se estiver no Drive, baixe uma cópia ou selecione-a da pasta sincronizada pelo Drive para computador. Arraste os arquivos ou use **clique para escolher**. Salve o produto, material ou estampa. Confira no Storage que o arquivo novo é `.webp` e ocupa até o alvo configurado. O arquivo original não é alterado. As fotos são reduzidas para até 2048 pixels no lado maior e podem diminuir mais para atingir o alvo. Metadados são removidos; GIFs/animações ficam estáticos. JPEG, PNG, WebP, AVIF, GIF, TIFF, SVG e HEIC/HEIF são tratados pelo fluxo; BMP depende da conversão no navegador. Um arquivo corrompido, RAW proprietário ou formato sem decodificador ainda pode falhar. Não há como garantir literalmente qualquer arquivo como imagem.
 
 O antigo bloqueio de 5 MiB sobre a foto original foi removido. Restam proteções técnicas contra arquivos gigantes: 50 MiB de entrada no servidor e 50 megapixels na decodificação do servidor. A compressão no navegador pode reduzir a foto antes de chegar ao backend. Fotos HEIC/TIFF podem não ter prévia no navegador antes de salvar, mas serão convertidas no backend quando suportadas.
 
-### Por que o seletor usa Drive, não Google Fotos
-
-O Google Fotos oferece uma API Picker própria, mas ela abre uma página hospedada pelo Google em outra janela e não permite personalizar esse seletor dentro do site. Além disso, a política da API restringe o uso para armazenar ou servir mídia que não seja de natureza pessoal. Como este sistema importa fotos comerciais de produtos para o Supabase e depois as exibe no catálogo, esse uso aparenta não se enquadrar na política; por isso, não configurei a API do Fotos. Consulte a [política de uso do Google Fotos](https://developers.google.com/photos/support/api-policy) e o [fluxo oficial do Picker](https://developers.google.com/photos/picker/guides/get-started-picker).
-
-O seletor do Drive também é uma janela controlada pelo Google, então o site não consegue redesenhar os controles internos. A abertura ficou mais limpa: mostra somente imagens próprias e esconde a navegação por pastas e os documentos. Para essa mudança, não é necessário criar outra credencial, habilitar outra API ou adicionar escopo do Google Fotos. Mantenha a Google Picker API e a Google Drive API habilitadas, a chave do Picker restrita ao domínio Cloudflare e o escopo `drive.file` já usado pelo fluxo.
-
 ## 11. Se algo não funcionar
 
-- **Botão Google/Drive não aparece:** confirme as variáveis públicas no Render e o retorno de `/api/auth/google/config`; recarregue o frontend novo.
+- **Botão Google não aparece:** confirme `GOOGLE_CLIENT_ID` no Render e o retorno de `/api/auth/google/config`; recarregue o frontend novo.
 - **Origem não autorizada pelo Google:** compare a origem da barra de endereços com as origens JavaScript do cliente Web. Hash de preview diferente é outra origem.
-- **Picker falha ou não mostra uma imagem:** confirme as duas APIs habilitadas, a restrição de referenciador da chave e o número do mesmo projeto do client ID. O seletor lista imagens próprias do Drive; conteúdo de unidades compartilhadas ou sem permissão apropriada pode não aparecer.
 - **Erro de CORS:** confira `CORS_ORIGINS`, sem caminho nem barra final, e publique a configuração do Render.
 - **Recuperação indisponível:** falta alguma variável `GMAIL_*`. O remetente precisa ter autorizado o cliente Gmail correspondente.
 - **Código não chegou:** confira spam, o e-mail salvo na conta, os limites de envio e os logs do Render. A mensagem `Falha no envio da recuperação via Gmail` aponta para autorização/credenciais do remetente; reautorize se o token expirou ou foi revogado. Os logs não devem conter tokens nem o código.

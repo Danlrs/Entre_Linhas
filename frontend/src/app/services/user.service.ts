@@ -8,7 +8,7 @@ export type SafeUser = Omit<User, 'password'>;
 
 export interface UpdateProfileRequest {
   email?: string;
-  login?: string;
+  nome?: string;
   telefone?: string | null;
 }
 
@@ -18,7 +18,7 @@ export interface ChangePasswordRequest {
 }
 
 export interface InvitationDetails { email: string; }
-export interface AcceptInvitationRequest { token: string; login: string; password: string; telefone: string; }
+export interface AcceptInvitationRequest { token: string; nome: string; login: string; password: string; confirmPassword: string; telefone: string; }
 
 @Injectable({
   providedIn: 'root',
@@ -41,26 +41,24 @@ export class UserService {
   }
 
   getMe(): Observable<SafeUser> {
-    return this.http.get<SafeUser>(`${this.apiUrl}/eu`);
+    return this.http.get<SafeUser>(`${this.apiUrl}/eu`).pipe(tap((user) => this.syncStoredProfile(user)));
   }
 
   updateMe(data: UpdateProfileRequest): Observable<SafeUser> {
     return this.http.patch<SafeUser>(`${this.apiUrl}/eu`, data).pipe(
-      tap((user) => {
-        const stored = localStorage.getItem('user');
-        if (stored) {
-          try {
-            const parsed = JSON.parse(stored);
-            localStorage.setItem(
-              'user',
-              JSON.stringify({ ...parsed, login: user.login, email: user.email }),
-            );
-          } catch {
-            // ignore parse errors
-          }
-        }
-      }),
+      tap((user) => this.syncStoredProfile(user)),
     );
+  }
+
+  private syncStoredProfile(user: SafeUser): void {
+    const stored = localStorage.getItem('user');
+    if (!stored) return;
+    try {
+      const parsed = JSON.parse(stored);
+      localStorage.setItem('user', JSON.stringify({ ...parsed, nome: user.nome, email: user.email }));
+    } catch {
+      // ignore corrupt legacy session cache; API remains the source of truth.
+    }
   }
 
   changePassword(data: ChangePasswordRequest): Observable<{ message: string }> {

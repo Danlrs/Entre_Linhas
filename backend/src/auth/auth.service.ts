@@ -31,7 +31,7 @@ export class AuthService {
       throw new UnauthorizedException('Credenciais inválidas.');
     }
 
-    return this.issueTokensForUser(user.id, user.login, user.email);
+    return this.issueTokensForUser(user.id, user.login, user.email, user.nome);
   }
 
   async loginGoogle(googleSubject: string): Promise<AuthResponseDto> {
@@ -39,7 +39,7 @@ export class AuthService {
     if (!user) {
       throw new UnauthorizedException('Entre com sua senha e vincule o Google em Configurações da conta primeiro.');
     }
-    return this.issueTokensForUser(user.id, user.login, user.email);
+    return this.issueTokensForUser(user.id, user.login, user.email, user.nome);
   }
 
   async refresh(body: RefreshTokenBodyDto): Promise<RefreshAccessResponseDto> {
@@ -101,6 +101,7 @@ export class AuthService {
     userId: number,
     login: string,
     email: string,
+    nome: string,
   ): Promise<AuthResponseDto> {
     const env = getValidatedEnv();
     const sid = randomUUID();
@@ -130,7 +131,7 @@ export class AuthService {
     return {
       access_token,
       refresh_token,
-      user: { id: userId, login, email },
+      user: { id: userId, login, email, nome },
     };
   }
 }

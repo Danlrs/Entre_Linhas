@@ -11,6 +11,9 @@ export class Usuario {
   @Column({ unique: true, length: 50 })
   login: string;
 
+  @Column({ name: 'nome', type: 'varchar', length: 100 })
+  nome: string;
+
   @Column({ name: 'senha' })
   password: string;
 

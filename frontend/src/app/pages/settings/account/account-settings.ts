@@ -39,7 +39,7 @@ export class AccountSettings implements OnInit {
   ngOnInit(): void {
     this.profileForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
-      login: ['', [Validators.required, Validators.minLength(3)]],
+      nome: ['', [Validators.required, Validators.maxLength(100)]],
       telefone: ['', brazilPhoneOptionalValidator()],
     });
 
@@ -67,7 +67,7 @@ export class AccountSettings implements OnInit {
         this.user = user;
         this.profileForm.patchValue({
           email: user.email,
-          login: user.login,
+          nome: user.nome,
           telefone: user.telefone ? maskBrazilPhoneInput(user.telefone) : '',
         });
         this.profileForm.markAsPristine();
@@ -101,11 +101,11 @@ export class AccountSettings implements OnInit {
     this.savingProfile = true;
     this.profileMessage = null;
 
-    const { email, login, telefone } = this.profileForm.value;
+    const { email, nome, telefone } = this.profileForm.value;
     const digits = normalizeBrazilPhoneForApi(telefone);
     const payload = {
       email,
-      login,
+      nome,
       telefone: digits ?? null,
     };
 
@@ -114,7 +114,7 @@ export class AccountSettings implements OnInit {
         this.user = user;
         this.profileForm.patchValue({
           email: user.email,
-          login: user.login,
+          nome: user.nome,
           telefone: user.telefone ? maskBrazilPhoneInput(user.telefone) : '',
         });
         this.profileForm.markAsPristine();

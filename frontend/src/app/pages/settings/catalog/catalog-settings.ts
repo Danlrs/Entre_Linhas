@@ -15,7 +15,6 @@ import { EstampaService } from '../../../services/estampa.service';
 import { MaterialService } from '../../../services/material.service';
 import { UploadService } from '../../../services/upload.service';
 import { ProductFormModal } from '../../../components/product-form-modal/product-form-modal';
-import { DriveImageButton } from '../../../components/drive-image-button/drive-image-button';
 
 type CatalogTab = 'produtos' | 'categorias' | 'materiais' | 'estampas';
 
@@ -27,7 +26,7 @@ interface ConfirmAction {
 @Component({
   selector: 'app-catalog-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, ProductFormModal, DriveImageButton],
+  imports: [CommonModule, FormsModule, ProductFormModal],
   templateUrl: './catalog-settings.html',
   styleUrl: './catalog-settings.css',
 })
@@ -89,20 +88,6 @@ export class CatalogSettings implements OnInit {
 
   ngOnInit(): void {
     this.loadAll();
-  }
-
-  onDriveImage(files: File[], kind: 'material' | 'estampa'): void {
-    if (!files[0]) return;
-    if (kind === 'material') {
-      this.clearNewMaterialImage();
-      this.newMaterialFile = files[0];
-      this.newMaterialPreview = URL.createObjectURL(files[0]);
-    } else {
-      this.clearNewEstampaImage();
-      this.newEstampaFile = files[0];
-      this.newEstampaPreview = URL.createObjectURL(files[0]);
-    }
-    this.cdr.markForCheck();
   }
 
   setTab(tab: CatalogTab): void {

@@ -1,48 +1,27 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { GoogleService } from './google.service';
+import { environment } from '../../environments/environment';
+import { BYPASS_AUTH_INTERCEPTOR } from '../interceptors/bypass-auth-interceptor-context';
 
-describe('Google Drive image download', () => {
+describe('GoogleService', () => {
   let service: GoogleService;
-  const docs = [{ id: 'a/b', name: 'foto.png' }] as google.picker.DocumentObject[];
+  let http: HttpTestingController;
+
   beforeEach(() => {
-    TestBed.configureTestingModule({ providers: [provideHttpClient()] });
+    TestBed.configureTestingModule({ providers: [GoogleService, provideHttpClient(), provideHttpClientTesting()] });
     service = TestBed.inject(GoogleService);
-  });
-  afterEach(() => vi.unstubAllGlobals());
-
-  function response(type: string, bytes: number) {
-    const read = vi.fn().mockResolvedValueOnce({ done: false, value: new Uint8Array(bytes) })
-      .mockResolvedValue({ done: true });
-    const cancel = vi.fn().mockResolvedValue(undefined);
-    const fetchMock = vi.fn().mockResolvedValue({ ok: true, headers: new Headers({ 'Content-Type': type }),
-      body: { getReader: () => ({ read, cancel }) } });
-    vi.stubGlobal('fetch', fetchMock);
-    return { fetchMock, cancel };
-  }
-
-  it('downloads only from the fixed Google endpoint and returns files for the existing upload', async () => {
-    const { fetchMock } = response('image/png', 10);
-    const files = await service['downloadImages'](docs, 'drive-token', 100);
-    expect(fetchMock).toHaveBeenCalledWith('https://www.googleapis.com/drive/v3/files/a%2Fb?alt=media',
-      expect.objectContaining({ headers: { Authorization: 'Bearer drive-token' } }));
-    expect(files[0].name).toBe('foto.png');
-    expect(files[0].size).toBe(10);
+    http = TestBed.inject(HttpTestingController);
   });
 
-  it('cancels streaming as soon as the size limit is exceeded', async () => {
-    const { cancel } = response('image/png', 101);
-    await expect(service['downloadImages'](docs, 'token', 100)).rejects.toThrow('capacidade de processamento');
-    expect(cancel).toHaveBeenCalled();
-  });
+  afterEach(() => http.verify());
 
-  it('rejects unsupported file formats', async () => {
-    response('application/pdf', 10);
-    await expect(service['downloadImages'](docs, 'token', 100)).rejects.toThrow('arquivo de imagem válido');
-  });
-
-  it('reports expired or denied Drive access without returning files', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 403 }));
-    await expect(service['downloadImages'](docs, 'expired', 100)).rejects.toThrow('Selecione-a novamente');
+  it('loads only the public Google client ID used for sign-in', async () => {
+    const result = service.config();
+    const request = http.expectOne(`${environment.apiUrl}/auth/google/config`);
+    expect(request.request.context.get(BYPASS_AUTH_INTERCEPTOR)).toBe(true);
+    request.flush({ clientId: 'client-id.apps.googleusercontent.com' });
+    await expect(result).resolves.toEqual({ clientId: 'client-id.apps.googleusercontent.com' });
   });
 });

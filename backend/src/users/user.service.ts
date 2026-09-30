@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ConflictException,
   UnauthorizedException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Not } from 'typeorm';
@@ -22,11 +23,17 @@ export class UserService {
   ) {}
 
   async createUser(createUserDto: CreateUserDto): Promise<SafeUser> {
-    const { email, login, password, telefone } = createUserDto;
+    const { email, password, telefone } = createUserDto;
+    const login = createUserDto.login.trim().toLowerCase();
+    if (!/^[a-z0-9_.]{3,50}$/.test(login)) {
+      throw new BadRequestException('Use de 3 a 50 caracteres no login: letras, números, _ ou ponto. Não use espaços.');
+    }
+    const nome = createUserDto.nome.trim();
 
-    const existing = await this.usuarioRepository.findOne({
-      where: [{ email }, { login }],
-    });
+    const existing = await this.usuarioRepository.createQueryBuilder('user')
+      .where('LOWER(user.email) = :email OR LOWER(user.login) = :login', {
+        email: email.trim().toLowerCase(), login,
+      }).getOne();
 
     if (existing) {
       if (existing.login === login) throw new ConflictException('Login já cadastrado.');
@@ -36,7 +43,8 @@ export class UserService {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const usuario = this.usuarioRepository.create({
-      email,
+      email: email.trim().toLowerCase(),
+      nome,
       login,
       password: hashedPassword,
       telefone: telefone ?? null,
@@ -52,15 +60,16 @@ export class UserService {
   }
 
   async getUserByLogin(login: string): Promise<Usuario> {
-    const user = await this.usuarioRepository.findOne({ where: { login } });
+    const user = await this.usuarioRepository.createQueryBuilder('user')
+      .where('LOWER(user.login) = :login', { login: login.trim().toLowerCase() }).getOne();
     if (!user) throw new NotFoundException('Usuário não encontrado.');
     return user;
   }
 
   async findByIdentifier(identifier: string): Promise<Usuario | null> {
     const matches = await this.usuarioRepository.createQueryBuilder('user')
-      .where('user.login = :login OR LOWER(user.email) = :email', {
-        login: identifier.trim(), email: identifier.trim().toLowerCase(),
+      .where('LOWER(user.login) = :login OR LOWER(user.email) = :email', {
+        login: identifier.trim().toLowerCase(), email: identifier.trim().toLowerCase(),
       }).take(2).getMany();
     // Nunca escolher arbitrariamente entre um login e o e-mail de outra conta.
     return matches.length === 1 ? matches[0] : null;
@@ -105,12 +114,10 @@ export class UserService {
       user.email = dto.email;
     }
 
-    if (dto.login && dto.login !== user.login) {
-      const exists = await this.usuarioRepository.findOne({
-        where: { login: dto.login, id: Not(id) },
-      });
-      if (exists) throw new ConflictException('Login já cadastrado.');
-      user.login = dto.login;
+    if (dto.nome !== undefined) {
+      const nome = dto.nome.trim();
+      if (!nome) throw new ConflictException('Informe seu nome.');
+      user.nome = nome;
     }
 
     if (dto.telefone !== undefined) {

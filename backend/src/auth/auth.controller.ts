@@ -29,7 +29,7 @@ export class AuthController {
   @Get('google/config')
   googleConfig() {
     const env = getValidatedEnv();
-    return { ...env.google, maxFileBytes: env.uploadMaxInputBytes };
+    return { clientId: env.google.clientId };
   }
 
   @Post('password/request')
