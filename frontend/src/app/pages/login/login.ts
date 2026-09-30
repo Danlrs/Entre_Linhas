@@ -5,10 +5,11 @@ import { RouterLink, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
+import { GoogleLoginButton } from '../../components/google-login-button/google-login-button';
 
 @Component({
   selector: 'app-login',
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, GoogleLoginButton],
   templateUrl: './login.html',
   styleUrl: './login.css',
 })
@@ -57,5 +58,9 @@ export class Login implements OnInit {
         this.errorMessage = 'Usuário ou senha incorretos.';
       }
     });
+  }
+
+  onGoogleLogin(): void {
+    this.router.navigate(['']);
   }
 }

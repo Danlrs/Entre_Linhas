@@ -247,7 +247,7 @@
         <div>
           <label class="block text-xs font-semibold text-[#626262] uppercase tracking-wide mb-1.5">Foto</label>
           <label class="relative w-full aspect-square rounded-xl border-2 border-dashed border-[#EDE8E0] hover:border-[#CF4E4E] transition-colors cursor-pointer flex items-center justify-center bg-[#FAF7F2] overflow-hidden">
-            <input type="file" accept="image/*" class="hidden" (change)="onNewMaterialFile($event)" />
+            <input type="file" accept="image/*,.heic,.heif,.tif,.tiff,.avif,.bmp" class="hidden" (change)="onNewMaterialFile($event)" />
             <img *ngIf="newMaterialPreview" [src]="newMaterialPreview" alt="" class="w-full h-full object-cover" />
             <div *ngIf="!newMaterialPreview" class="text-center px-2">
               <svg class="w-6 h-6 text-[#B6B6B7] mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -264,6 +264,7 @@
               ×
             </button>
           </label>
+<app-drive-image-button [disabled]="creatingMaterial" (selected)="onDriveImage($event, 'material')" />
         </div>
 
         <form (ngSubmit)="createMaterial()" class="space-y-3">
@@ -361,7 +362,7 @@
         <div>
           <label class="block text-xs font-semibold text-[#626262] uppercase tracking-wide mb-1.5">Imagem</label>
           <label class="relative w-full aspect-square rounded-xl border-2 border-dashed border-[#EDE8E0] hover:border-[#CF4E4E] transition-colors cursor-pointer flex items-center justify-center bg-[#FAF7F2] overflow-hidden">
-            <input type="file" accept="image/*" class="hidden" (change)="onNewEstampaFile($event)" />
+            <input type="file" accept="image/*,.heic,.heif,.tif,.tiff,.avif,.bmp" class="hidden" (change)="onNewEstampaFile($event)" />
             <img *ngIf="newEstampaPreview" [src]="newEstampaPreview" alt="" class="w-full h-full object-cover" />
             <div *ngIf="!newEstampaPreview" class="text-center px-2">
               <svg class="w-6 h-6 text-[#B6B6B7] mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -378,6 +379,7 @@
               ×
             </button>
           </label>
+<app-drive-image-button [disabled]="creatingEstampa" (selected)="onDriveImage($event, 'estampa')" />
         </div>
 
         <form (ngSubmit)="createEstampa()" class="space-y-3">

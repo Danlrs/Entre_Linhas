@@ -5,7 +5,7 @@ import { Repository } from 'typeorm';
 import { randomUUID } from 'crypto';
 import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
-import { UserService } from 'src/users/user.service';
+import { UserService } from '../users/user.service';
 import { AuthResponseDto, RefreshAccessResponseDto } from './dto/auth-response.dto';
 import { LogoutBodyDto, RefreshTokenBodyDto } from './dto/refresh-token.dto';
 import { RefreshToken } from '../entities/refresh-token.entity';
@@ -23,13 +23,22 @@ export class AuthService {
   ) {}
 
   async login(loginDto: LoginDto): Promise<AuthResponseDto> {
-    const user = await this.userService.getUserByLogin(loginDto.login);
+    const user = await this.userService.findByIdentifier(loginDto.login);
+    if (!user) throw new UnauthorizedException('Credenciais inválidas.');
 
     const isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
     if (!isPasswordValid) {
       throw new UnauthorizedException('Credenciais inválidas.');
     }
 
+    return this.issueTokensForUser(user.id, user.login, user.email);
+  }
+
+  async loginGoogle(googleSubject: string): Promise<AuthResponseDto> {
+    const user = await this.userService.findByGoogleSubject(googleSubject);
+    if (!user) {
+      throw new UnauthorizedException('Entre com sua senha e vincule o Google em Configurações da conta primeiro.');
+    }
     return this.issueTokensForUser(user.id, user.login, user.email);
   }
 

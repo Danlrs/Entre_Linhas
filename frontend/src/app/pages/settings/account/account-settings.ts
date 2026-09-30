@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { UserService, SafeUser } from '../../../services/user.service';
+import { GoogleLoginButton } from '../../../components/google-login-button/google-login-button';
 import {
   brazilPhoneOptionalValidator,
   maskBrazilPhoneInput,
@@ -12,7 +13,7 @@ import {
 @Component({
   selector: 'app-account-settings',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, GoogleLoginButton],
   templateUrl: './account-settings.html',
   styleUrl: './account-settings.css',
 })

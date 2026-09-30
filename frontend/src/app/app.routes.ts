@@ -14,6 +14,7 @@ export const routes: Routes = [
   { path: 'catalogo', component: ProductList },
   { path: 'product/:id', component: ProductDetail },
   { path: 'admin', component: Login },
+  { path: 'admin/recuperar-senha', loadComponent: () => import('./pages/password-recovery/password-recovery').then((m) => m.PasswordRecovery) },
   //{ path: 'cadastro', component: Register },
   {
     path: 'configuracoes',

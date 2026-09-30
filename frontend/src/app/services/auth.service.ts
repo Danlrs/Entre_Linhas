@@ -36,17 +36,25 @@ export class AuthService {
 
   constructor(private http: HttpClient) {}
 
+  loginGoogle(credential: string): Observable<LoginResponse> {
+    return this.http.post<LoginResponse>(`${this.authUrl}/google`, { credential }, {
+      context: new HttpContext().set(BYPASS_AUTH_INTERCEPTOR, true),
+    }).pipe(tap((response) => this.storeSession(response)));
+  }
+
+  linkGoogle(credential: string): Observable<{ ok: true }> {
+    return this.http.post<{ ok: true }>(`${this.authUrl}/google/link`, { credential });
+  }
+
+  private storeSession(response: LoginResponse): void {
+    localStorage.setItem('access_token', response.access_token);
+    localStorage.setItem('refresh_token', response.refresh_token);
+    localStorage.setItem('user', JSON.stringify(response.user));
+  }
+
   login(credentials: LoginRequest): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${this.authUrl}/login`, credentials).pipe(
-      tap((response) => {
-        if (response.access_token) {
-          localStorage.setItem('access_token', response.access_token);
-        }
-        if (response.refresh_token) {
-          localStorage.setItem('refresh_token', response.refresh_token);
-        }
-        localStorage.setItem('user', JSON.stringify(response.user));
-      }),
+      tap((response) => this.storeSession(response)),
     );
   }
 

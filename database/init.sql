@@ -13,6 +13,7 @@ CREATE TABLE usuarios (
     email         VARCHAR(255) UNIQUE NOT NULL,
     login         VARCHAR(50)  UNIQUE NOT NULL,
     senha         VARCHAR(255)        NOT NULL,
+    google_subject VARCHAR(255) UNIQUE,
     telefone      VARCHAR(20)  UNIQUE,
     data_criacao  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -127,3 +128,19 @@ CREATE TABLE produto_materiais (
 CREATE INDEX idx_produtos_categoria        ON produtos(categoria_id);
 CREATE INDEX idx_imagens_produto           ON imagens_produto(produto_id);
 CREATE INDEX idx_produto_tamanhos_produto  ON produto_tamanhos(produto_id);
+
+-- Recuperação de senha: registros privados, acesso apenas pelo backend.
+CREATE TABLE IF NOT EXISTS password_resets (
+    usuario_id INTEGER PRIMARY KEY REFERENCES usuarios(id) ON DELETE CASCADE,
+    email VARCHAR(255) NOT NULL,
+    password_snapshot VARCHAR(255) NOT NULL,
+    code_hash VARCHAR(64),
+    token_hash VARCHAR(64),
+    attempts INTEGER NOT NULL DEFAULT 0,
+    expires_at TIMESTAMPTZ NOT NULL,
+    last_requested_at TIMESTAMPTZ NOT NULL,
+    window_start TIMESTAMPTZ NOT NULL,
+    request_count INTEGER NOT NULL DEFAULT 1
+);
+CREATE UNIQUE INDEX IF NOT EXISTS password_resets_token_unique ON password_resets(token_hash);
+ALTER TABLE password_resets ENABLE ROW LEVEL SECURITY;

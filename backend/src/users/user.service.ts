@@ -57,6 +57,36 @@ export class UserService {
     return user;
   }
 
+  async findByIdentifier(identifier: string): Promise<Usuario | null> {
+    const matches = await this.usuarioRepository.createQueryBuilder('user')
+      .where('user.login = :login OR LOWER(user.email) = :email', {
+        login: identifier.trim(), email: identifier.trim().toLowerCase(),
+      }).take(2).getMany();
+    // Nunca escolher arbitrariamente entre um login e o e-mail de outra conta.
+    return matches.length === 1 ? matches[0] : null;
+  }
+
+  async findByGoogleSubject(googleSubject: string): Promise<Usuario | null> {
+    return this.usuarioRepository.findOne({ where: { googleSubject } });
+  }
+
+  async linkGoogle(id: number, googleSubject: string): Promise<{ ok: true }> {
+    try {
+      const result = await this.usuarioRepository.createQueryBuilder().update(Usuario)
+        .set({ googleSubject })
+        .where('id = :id AND (google_subject IS NULL OR google_subject = :subject)', {
+          id, subject: googleSubject,
+        }).execute();
+      if (!result.affected) throw new ConflictException('Sua conta já possui outro Google vinculado.');
+      return { ok: true };
+    } catch (error) {
+      if ((error as { code?: string }).code === '23505') {
+        throw new ConflictException('Esta conta Google já está vinculada a outro usuário.');
+      }
+      throw error;
+    }
+  }
+
   async getUserById(id: number): Promise<SafeUser> {
     const user = await this.usuarioRepository.findOne({ where: { id } });
     if (!user) throw new NotFoundException('Usuário não encontrado.');

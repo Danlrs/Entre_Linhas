@@ -48,6 +48,7 @@
             </span>
           </div>
 
+          <app-drive-image-button [multiple]="true" [disabled]="isSubmitting" (selected)="addFiles($event)" />
           <!-- Drop zone -->
           <div
             (dragover)="onDragOver($event)"
@@ -66,12 +67,12 @@
             </div>
             <p class="text-sm font-semibold text-[#2C2C2C]">Arraste suas imagens aqui</p>
             <p class="text-xs text-[#626262]">
-              ou <span class="text-[#CF4E4E] font-semibold">clique para selecionar</span> (PNG, JPG, WEBP)
+              ou <span class="text-[#CF4E4E] font-semibold">clique para selecionar</span> — as fotos serão comprimidas automaticamente
             </p>
             <input
               #fileInput
               type="file"
-              accept="image/*"
+              accept="image/*,.heic,.heif,.tif,.tiff,.avif,.bmp"
               multiple
               class="hidden"
               (change)="onFileSelected($event)"
@@ -445,6 +446,7 @@
             </div>
 
             <div *ngIf="showCreateMaterial" class="bg-[#F5F1EB] rounded-xl p-3 space-y-2">
+              <app-drive-image-button [disabled]="creatingMaterial" (selected)="onDriveImage($event, 'material')" />
               <div class="flex gap-3">
                 <label
                   class="shrink-0 w-16 h-16 rounded-lg border-2 border-dashed border-[#EDE8E0] bg-white flex items-center justify-center overflow-hidden cursor-pointer hover:border-[#CF4E4E] transition-colors relative"
@@ -468,7 +470,7 @@
                   </svg>
                   <input
                     type="file"
-                    accept="image/*"
+                    accept="image/*,.heic,.heif,.tif,.tiff,.avif,.bmp"
                     class="hidden"
                     (change)="onNewMaterialFileSelected($event)"
                   />
@@ -608,6 +610,7 @@
             </div>
 
             <div *ngIf="showCreateEstampa" class="bg-[#F5F1EB] rounded-xl p-3 space-y-2">
+              <app-drive-image-button [disabled]="creatingEstampa" (selected)="onDriveImage($event, 'estampa')" />
               <div class="flex gap-3">
                 <label
                   class="shrink-0 w-16 h-16 rounded-lg border-2 border-dashed border-[#EDE8E0] bg-white flex items-center justify-center overflow-hidden cursor-pointer hover:border-[#CF4E4E] transition-colors relative"
@@ -631,7 +634,7 @@
                   </svg>
                   <input
                     type="file"
-                    accept="image/*"
+                    accept="image/*,.heic,.heif,.tif,.tiff,.avif,.bmp"
                     class="hidden"
                     (change)="onNewEstampaFileSelected($event)"
                   />

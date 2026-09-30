@@ -14,6 +14,9 @@ export class Usuario {
   @Column({ name: 'senha' })
   password: string;
 
+  @Column({ name: 'google_subject', type: 'varchar', length: 255, nullable: true, unique: true })
+  googleSubject: string | null;
+
   @Column({ nullable: true, unique: true, length: 20 })
   telefone: string | null;
 

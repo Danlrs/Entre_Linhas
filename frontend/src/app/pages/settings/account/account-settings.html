@@ -1,5 +1,12 @@
 <div class="space-y-6">
 
+  <section class="bg-white rounded-2xl shadow-sm border border-[#EDE8E0] p-6">
+    <h2 class="text-lg font-bold text-[#2C2C2C]">Entrar com o Google</h2>
+    <p class="text-sm text-[#626262] mt-2">Vincule sua conta Google para usá-la nos próximos acessos. Sua senha continuará funcionando.</p>
+    <p *ngIf="user?.googleSubject" class="text-sm text-green-700 mt-2">Sua conta Google já está vinculada.</p>
+    <app-google-login-button *ngIf="user && !user.googleSubject" [link]="true" (completed)="retryLoad()" />
+  </section>
+
   <!-- Profile card -->
   <div class="bg-white rounded-2xl shadow-sm border border-[#EDE8E0] overflow-hidden">
     <header class="px-6 sm:px-8 py-5 border-b border-[#EDE8E0]">

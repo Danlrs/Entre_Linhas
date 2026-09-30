@@ -26,6 +26,7 @@ import { CategoriaService } from '../../services/categoria.service';
 import { EstampaService } from '../../services/estampa.service';
 import { MaterialService } from '../../services/material.service';
 import { UploadService } from '../../services/upload.service';
+import { DriveImageButton } from '../drive-image-button/drive-image-button';
 
 interface PendingImage {
   id: string;
@@ -54,7 +55,7 @@ interface PendingSize {
 @Component({
   selector: 'app-product-form-modal',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, DriveImageButton],
   templateUrl: './product-form-modal.html',
   styleUrls: ['./product-form-modal.css'],
 })
@@ -424,7 +425,7 @@ export class ProductFormModal implements OnChanges {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     input.value = '';
-    if (!file || !file.type.startsWith('image/')) return;
+    if (!file) return;
     this.clearNewEstampaImage();
     this.newEstampaFile = file;
     this.newEstampaPreview = URL.createObjectURL(file);
@@ -434,7 +435,7 @@ export class ProductFormModal implements OnChanges {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     input.value = '';
-    if (!file || !file.type.startsWith('image/')) return;
+    if (!file) return;
     this.clearNewMaterialImage();
     this.newMaterialFile = file;
     this.newMaterialPreview = URL.createObjectURL(file);
@@ -482,8 +483,8 @@ export class ProductFormModal implements OnChanges {
     }
   }
 
-  private addFiles(files: File[]): void {
-    const accepted = files.filter((file) => file.type.startsWith('image/'));
+  addFiles(files: File[]): void {
+    const accepted = files;
     accepted.forEach((file) => {
       const id = `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       const url = URL.createObjectURL(file);
@@ -491,6 +492,20 @@ export class ProductFormModal implements OnChanges {
       const principal = this.images.length === 0;
       this.images.push({ id, url, principal, ordem, uploaded: false, file });
     });
+  }
+
+  onDriveImage(files: File[], kind: 'material' | 'estampa'): void {
+    if (!files[0]) return;
+    if (kind === 'material') {
+      this.clearNewMaterialImage();
+      this.newMaterialFile = files[0];
+      this.newMaterialPreview = URL.createObjectURL(files[0]);
+    } else {
+      this.clearNewEstampaImage();
+      this.newEstampaFile = files[0];
+      this.newEstampaPreview = URL.createObjectURL(files[0]);
+    }
+    this.cdr.markForCheck();
   }
 
   removeImage(image: PendingImage): void {
@@ -615,12 +630,14 @@ export class ProductFormModal implements OnChanges {
         target.uploading = false;
         target.file = undefined;
       });
-    } catch {
+    } catch (error) {
+      const detail = (error as { error?: { message?: string } }).error?.message;
+      const message = typeof detail === 'string' ? detail : 'Falha ao enviar uma ou mais imagens.';
       pending.forEach((p) => {
         p.uploading = false;
-        p.error = 'Falha no upload.';
+        p.error = message;
       });
-      throw new Error('Falha ao enviar uma ou mais imagens.');
+      throw new Error(message);
     }
   }
 }

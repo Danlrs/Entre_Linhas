@@ -45,14 +45,24 @@ export const EnvSchema = z
 
     LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
 
+    GOOGLE_CLIENT_ID: z.string().default(''),
+    GOOGLE_PICKER_API_KEY: z.string().default(''),
+    GOOGLE_CLOUD_PROJECT_NUMBER: z.string().default(''),
+    GMAIL_CLIENT_ID: z.string().default(''),
+    GMAIL_CLIENT_SECRET: z.string().default(''),
+    GMAIL_REFRESH_TOKEN: z.string().default(''),
+    GMAIL_SENDER: z.string().email().default('contato.entrelinhaslrs@gmail.com'),
+
     THROTTLE_LOGIN_LIMIT: z.coerce.number().int().positive().default(15),
     THROTTLE_LOGIN_TTL_SEC: z.coerce.number().int().positive().default(60),
 
     THROTTLE_UPLOAD_LIMIT: z.coerce.number().int().positive().default(60),
     THROTTLE_UPLOAD_TTL_SEC: z.coerce.number().int().positive().default(3600),
 
-    /** Tamanho máximo por arquivo de upload (validação também no servidor após gravar disco). */
+    /** Teto de saída após compressão; não limita o tamanho da foto original. */
     UPLOAD_MAX_FILE_BYTES: z.coerce.number().int().positive().max(20 * 1024 * 1024).default(5 * 1024 * 1024),
+    UPLOAD_MAX_INPUT_BYTES: z.coerce.number().int().positive().max(100 * 1024 * 1024).default(50 * 1024 * 1024),
+    IMAGE_TARGET_BYTES: z.coerce.number().int().min(16384).max(5 * 1024 * 1024).default(1024 * 1024),
 
     SENTRY_DSN: z
       .string()
@@ -168,11 +178,24 @@ export const EnvSchema = z
         origins: data.CORS_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean),
       },
       logLevel: data.LOG_LEVEL,
+      google: {
+        clientId: data.GOOGLE_CLIENT_ID.trim(),
+        pickerApiKey: data.GOOGLE_PICKER_API_KEY.trim(),
+        projectNumber: data.GOOGLE_CLOUD_PROJECT_NUMBER.trim(),
+      },
+      gmail: {
+        clientId: data.GMAIL_CLIENT_ID.trim(),
+        clientSecret: data.GMAIL_CLIENT_SECRET.trim(),
+        refreshToken: data.GMAIL_REFRESH_TOKEN.trim(),
+        sender: data.GMAIL_SENDER,
+      },
       throttle: {
         login: { limit: data.THROTTLE_LOGIN_LIMIT, ttlSec: data.THROTTLE_LOGIN_TTL_SEC },
         upload: { limit: data.THROTTLE_UPLOAD_LIMIT, ttlSec: data.THROTTLE_UPLOAD_TTL_SEC },
       },
       uploadMaxFileBytes: data.UPLOAD_MAX_FILE_BYTES,
+      uploadMaxInputBytes: data.UPLOAD_MAX_INPUT_BYTES,
+      imageTargetBytes: Math.min(data.IMAGE_TARGET_BYTES, data.UPLOAD_MAX_FILE_BYTES),
       sentryDsn: data.SENTRY_DSN,
       supabase:
         supabaseUrl && supabaseKey && bucketName

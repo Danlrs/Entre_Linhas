@@ -4,4 +4,5 @@ export interface User {
   login: string;
   password: string;
   telefone?: string;
+  googleSubject?: string | null;
 }

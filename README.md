@@ -157,3 +157,7 @@ Ordem prática: **banco → API → front**; depois configure **`CORS_ORIGINS`**
 ### Licença
 
 Projeto privado / UNLICENSED (veja `backend/package.json`). Altere se for tornar o repositório open source.
+
+## Login Google, recuperação de senha e fotos comprimidas
+
+Consulte [o guia passo a passo](docs/google-integration.md) para executar as migrações 005/006 no Supabase, registrar as credenciais Google, autorizar o Gmail remetente e publicar no Render/Cloudflare Pages. O Google Cloud é usado para credenciais; a hospedagem continua nos serviços atuais. Novas fotos são convertidas para WebP com alvo padrão de 1 MiB.

@@ -38,6 +38,8 @@
     "@angular/cli": "^21.1.2",
     "@angular/compiler-cli": "^21.1.0",
     "@tailwindcss/postcss": "^4.1.12",
+    "@types/google.accounts": "^0.0.18",
+    "@types/google.picker": "^0.0.52",
     "jsdom": "^27.1.0",
     "postcss": "^8.5.3",
     "tailwindcss": "^4.1.12",

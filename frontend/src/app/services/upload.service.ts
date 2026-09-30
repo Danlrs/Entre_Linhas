@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, defer, switchMap, from, concatMap, toArray, map } from 'rxjs';
+import { compressImage } from '../utils/compress-image';
 import { environment } from '../../environments/environment';
 
 export interface UploadedFile {
@@ -23,11 +24,14 @@ export class UploadService {
   constructor(private http: HttpClient) {}
 
   uploadProductImages(files: File[]): Observable<UploadResponse> {
-    const formData = new FormData();
-    for (const file of files) {
-      formData.append('files', file, file.name);
-    }
-    return this.http.post<UploadResponse>(`${this.apiUrl}/products`, formData);
+    // Sequencial: não decodificar várias fotos grandes ao mesmo tempo.
+    return from(files).pipe(concatMap((file) => defer(() => compressImage(file)).pipe(
+      switchMap((prepared) => {
+        const data = new FormData();
+        data.append('files', prepared, prepared.name);
+        return this.http.post<UploadResponse>(`${this.apiUrl}/products`, data);
+      }),
+    )), toArray(), map((responses) => ({ files: responses.flatMap((response) => response.files) })));
   }
 
   uploadEstampaImage(file: File): Observable<UploadedFile> {
@@ -42,8 +46,10 @@ export class UploadService {
     folder: 'estampas' | 'materiais',
     file: File,
   ): Observable<UploadedFile> {
-    const formData = new FormData();
-    formData.append('file', file, file.name);
-    return this.http.post<UploadedFile>(`${this.apiUrl}/${folder}`, formData);
+    return defer(() => compressImage(file)).pipe(switchMap((prepared) => {
+      const formData = new FormData();
+      formData.append('file', prepared, prepared.name);
+      return this.http.post<UploadedFile>(`${this.apiUrl}/${folder}`, formData);
+    }));
   }
 }
