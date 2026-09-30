@@ -1,10 +1,13 @@
-import { Body, Controller, Get, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { Request } from 'express';
 import { UserService } from './user.service';
-import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { UserInvitationService } from './user-invitation.service';
+import { InviteUserDto } from './dto/invite-user.dto';
+import { AcceptInvitationDto } from './dto/accept-invitation.dto';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 
 interface JwtPayload {
   sub: number;
@@ -13,11 +16,27 @@ interface JwtPayload {
 
 @Controller('usuario')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(private readonly userService: UserService, private readonly invitations: UserInvitationService) {}
 
-  @Post('cadastro')
-  registerUser(@Body() dto: CreateUserDto) {
-    return this.userService.createUser(dto);
+  @UseGuards(JwtAuthGuard, ThrottlerGuard)
+  @Throttle({ default: { ttl: 3_600_000, limit: 5 } })
+  @Post('convites')
+  inviteUser(@Body() dto: InviteUserDto, @Req() req: Request) {
+    return this.invitations.invite(dto.email, req.headers.origin ?? '');
+  }
+
+  @Get('convites/validar')
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { ttl: 600_000, limit: 30 } })
+  validateInvitation(@Query('token') token: string) {
+    return this.invitations.getInvitation(token ?? '');
+  }
+
+  @Post('convites/aceitar')
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { ttl: 600_000, limit: 10 } })
+  acceptInvitation(@Body() dto: AcceptInvitationDto) {
+    return this.invitations.accept(dto);
   }
 
   @UseGuards(JwtAuthGuard)

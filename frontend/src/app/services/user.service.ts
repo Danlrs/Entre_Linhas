@@ -6,13 +6,6 @@ import { environment } from '../../environments/environment';
 
 export type SafeUser = Omit<User, 'password'>;
 
-export interface RegisterRequest {
-  email: string;
-  login: string;
-  password: string;
-  telefone?: string;
-}
-
 export interface UpdateProfileRequest {
   email?: string;
   login?: string;
@@ -24,6 +17,9 @@ export interface ChangePasswordRequest {
   newPassword: string;
 }
 
+export interface InvitationDetails { email: string; }
+export interface AcceptInvitationRequest { token: string; login: string; password: string; telefone: string; }
+
 @Injectable({
   providedIn: 'root',
 })
@@ -32,8 +28,16 @@ export class UserService {
 
   constructor(private http: HttpClient) {}
 
-  registerUser(data: RegisterRequest): Observable<SafeUser> {
-    return this.http.post<SafeUser>(`${this.apiUrl}/cadastro`, data);
+  inviteUser(email: string): Observable<{ ok: true }> {
+    return this.http.post<{ ok: true }>(`${this.apiUrl}/convites`, { email });
+  }
+
+  getInvitation(token: string): Observable<InvitationDetails> {
+    return this.http.get<InvitationDetails>(`${this.apiUrl}/convites/validar`, { params: { token } });
+  }
+
+  acceptInvitation(data: AcceptInvitationRequest): Observable<{ ok: true }> {
+    return this.http.post<{ ok: true }>(`${this.apiUrl}/convites/aceitar`, data);
   }
 
   getMe(): Observable<SafeUser> {

@@ -176,6 +176,12 @@ As variáveis de imagem significam: alvo de saída de 1 MiB, teto de saída de 5
 6. Publique o frontend na Cloudflare com as configurações existentes. A API de produção já está apontando para `https://entrelinhas-wj3f.onrender.com/api` em `environment.prod.ts`.
 7. Acesse o endereço principal confirmado ou a **nova** URL da publicação. Uma URL com hash antigo pode continuar mostrando a versão anterior.
 
+### Convite de novos usuários
+
+Antes de publicar esta funcionalidade, execute uma vez no SQL Editor do Supabase o arquivo [`backend/migrations/20260930-create-user-invitations.sql`](../backend/migrations/20260930-create-user-invitations.sql). Ele cria `public.convites_usuario`, que guarda o e-mail convidado, o hash do token e os horários de expiração/uso; o token original só vai no link do e-mail. Não habilite `synchronize` no TypeORM.
+
+O Render já deve ter `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN` e `GMAIL_SENDER=contato.entrelinhaslrs@gmail.com` configurados para a recuperação de senha; os convites reutilizam o mesmo remetente e não exigem nova variável. Confirme também em `CORS_ORIGINS` as origens em que o usuário vai abrir o site, porque o backend só cria link para uma origem permitida. Depois do deploy, entre no painel, abra **Configurações → Usuários**, informe o e-mail e envie. O link expira em 48 horas e só pode ser aceito uma vez. A pessoa define o login, senha de pelo menos oito caracteres e telefone; o e-mail fica bloqueado no endereço que recebeu o convite. O cadastro aberto antigo foi desativado; `/cadastro` volta para o login.
+
 Nenhuma variável secreta precisa ser colocada na Cloudflare Pages para esses recursos.
 
 ## 10. Teste os fluxos completos
@@ -184,17 +190,25 @@ Nenhuma variável secreta precisa ser colocada na Cloudflare Pages para esses re
 
 **Recuperação:** clique em **Esqueci minha senha**, informe o e-mail de uma conta cadastrada e aguarde o código. Confira remetente e spam. Digite os seis números, crie uma nova senha de pelo menos oito caracteres e volte ao login. Teste a nova senha e confirme que a antiga deixou de funcionar. Um código usado ou expirado deve ser recusado. E-mails não cadastrados recebem a mesma resposta na tela, mas não geram mensagem.
 
+**Convites:** em **Configurações → Usuários**, envie um convite para um e-mail ainda não cadastrado. Confirme que ele recebe o link, tente abrir novamente o mesmo link após concluir o cadastro e confirme que ele já não pode ser usado. A pessoa deve informar login, senha e telefone; o e-mail do formulário deve aparecer travado no endereço destinatário. O link `/cadastro/convite` sem um token válido não permite criar uma conta.
+
 O código dura dez minutos e admite cinco tentativas. Reenvios têm intervalo mínimo de um minuto e cota de cinco por conta por hora. Depois da validação, o token de redefinição dura mais dez minutos e só pode ser usado uma vez. Ele permanece apenas na memória da tela; ao recarregar, recomece o fluxo. Ao redefinir a senha, as sessões de refresh anteriores são revogadas. Tokens de acesso já emitidos expiram no prazo configurado em `JWT_ACCESS_EXPIRES_IN` (padrão quinze minutos).
 
-**Fotos:** teste uma foto grande do celular, um PNG e uma imagem do Drive. Salve o produto, material ou estampa. Confira no Storage que o arquivo novo é `.webp` e ocupa até o alvo configurado. O arquivo original não é alterado. As fotos são reduzidas para até 2048 pixels no lado maior e podem diminuir mais para atingir o alvo. Metadados são removidos; GIFs/animações ficam estáticos. JPEG, PNG, WebP, AVIF, GIF, TIFF, SVG e HEIC/HEIF são tratados pelo fluxo; BMP depende da conversão no navegador. Um arquivo corrompido, RAW proprietário ou formato sem decodificador ainda pode falhar. Não há como garantir literalmente qualquer arquivo como imagem.
+**Fotos:** teste uma foto grande do celular, um PNG e uma imagem do Drive. No botão **Foto do Google Drive → Escolher**, o seletor abre diretamente na visualização de imagens próprias; pastas e documentos, incluindo arquivos do Classroom, ficam fora da lista. Selecione uma ou mais fotos, conforme o campo permitir. Salve o produto, material ou estampa. Confira no Storage que o arquivo novo é `.webp` e ocupa até o alvo configurado. O arquivo original não é alterado. As fotos são reduzidas para até 2048 pixels no lado maior e podem diminuir mais para atingir o alvo. Metadados são removidos; GIFs/animações ficam estáticos. JPEG, PNG, WebP, AVIF, GIF, TIFF, SVG e HEIC/HEIF são tratados pelo fluxo; BMP depende da conversão no navegador. Um arquivo corrompido, RAW proprietário ou formato sem decodificador ainda pode falhar. Não há como garantir literalmente qualquer arquivo como imagem.
 
 O antigo bloqueio de 5 MiB sobre a foto original foi removido. Restam proteções técnicas contra arquivos gigantes: 50 MiB de entrada no servidor e 50 megapixels na decodificação do servidor. A compressão no navegador pode reduzir a foto antes de chegar ao backend. Fotos HEIC/TIFF podem não ter prévia no navegador antes de salvar, mas serão convertidas no backend quando suportadas.
+
+### Por que o seletor usa Drive, não Google Fotos
+
+O Google Fotos oferece uma API Picker própria, mas ela abre uma página hospedada pelo Google em outra janela e não permite personalizar esse seletor dentro do site. Além disso, a política da API restringe o uso para armazenar ou servir mídia que não seja de natureza pessoal. Como este sistema importa fotos comerciais de produtos para o Supabase e depois as exibe no catálogo, esse uso aparenta não se enquadrar na política; por isso, não configurei a API do Fotos. Consulte a [política de uso do Google Fotos](https://developers.google.com/photos/support/api-policy) e o [fluxo oficial do Picker](https://developers.google.com/photos/picker/guides/get-started-picker).
+
+O seletor do Drive também é uma janela controlada pelo Google, então o site não consegue redesenhar os controles internos. A abertura ficou mais limpa: mostra somente imagens próprias e esconde a navegação por pastas e os documentos. Para essa mudança, não é necessário criar outra credencial, habilitar outra API ou adicionar escopo do Google Fotos. Mantenha a Google Picker API e a Google Drive API habilitadas, a chave do Picker restrita ao domínio Cloudflare e o escopo `drive.file` já usado pelo fluxo.
 
 ## 11. Se algo não funcionar
 
 - **Botão Google/Drive não aparece:** confirme as variáveis públicas no Render e o retorno de `/api/auth/google/config`; recarregue o frontend novo.
 - **Origem não autorizada pelo Google:** compare a origem da barra de endereços com as origens JavaScript do cliente Web. Hash de preview diferente é outra origem.
-- **Picker falha:** confirme as duas APIs habilitadas, a restrição de referenciador da chave e o número do mesmo projeto do client ID.
+- **Picker falha ou não mostra uma imagem:** confirme as duas APIs habilitadas, a restrição de referenciador da chave e o número do mesmo projeto do client ID. O seletor lista imagens próprias do Drive; conteúdo de unidades compartilhadas ou sem permissão apropriada pode não aparecer.
 - **Erro de CORS:** confira `CORS_ORIGINS`, sem caminho nem barra final, e publique a configuração do Render.
 - **Recuperação indisponível:** falta alguma variável `GMAIL_*`. O remetente precisa ter autorizado o cliente Gmail correspondente.
 - **Código não chegou:** confira spam, o e-mail salvo na conta, os limites de envio e os logs do Render. A mensagem `Falha no envio da recuperação via Gmail` aponta para autorização/credenciais do remetente; reautorize se o token expirou ou foi revogado. Os logs não devem conter tokens nem o código.

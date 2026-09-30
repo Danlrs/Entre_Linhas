@@ -6,10 +6,21 @@ import { GoogleConfig, GoogleService } from '../../services/google.service';
   standalone: true,
   template: `
     @if (config()) {
-      <button type="button" [disabled]="busy() || disabled" (click)="select()"
-        class="my-2 px-4 py-2 border border-[#EDE8E0] rounded-lg text-sm bg-white disabled:opacity-50">
-        {{ busy() ? 'Importando do Drive...' : 'Selecionar do Google Drive' }}
-      </button>
+      <div class="my-3 rounded-xl border border-[#EDE8E0] bg-white p-3 flex items-center gap-3">
+        <span class="w-9 h-9 shrink-0 rounded-lg bg-[#F5F1EB] text-[#CF4E4E] flex items-center justify-center" aria-hidden="true">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m8 3-5 9 5 9h8l5-9-5-9H8Zm0 0 5 9m3 9-3-9m5-9-5 9M3 12h10" />
+          </svg>
+        </span>
+        <div class="min-w-0 flex-1">
+          <p class="text-sm font-semibold text-[#2C2C2C]">Foto do Google Drive</p>
+          <p class="text-xs text-[#626262] mt-0.5">Busca somente imagens, sem pastas nem documentos.</p>
+        </div>
+        <button type="button" [disabled]="busy() || disabled" (click)="select()"
+          class="shrink-0 px-3 py-2 border border-[#EDE8E0] rounded-lg text-xs sm:text-sm font-semibold text-[#CF4E4E] hover:border-[#CF4E4E] hover:bg-[#FAF7F2] disabled:opacity-50">
+          {{ busy() ? 'Abrindo...' : 'Escolher' }}
+        </button>
+      </div>
     }
     @if (error()) { <p class="text-sm text-red-600" role="alert">{{ error() }}</p> }
   `,

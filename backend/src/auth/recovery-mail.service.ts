@@ -36,4 +36,26 @@ export class RecoveryMailService {
       timeout: 15000, retry: false,
     });
   }
+
+  async sendInvitation(email: string, inviteUrl: string): Promise<void> {
+    this.assertConfigured();
+    if (!isEmail(email) || /[\r\n]/.test(email)) throw new Error('Invalid recipient');
+    const cfg = getValidatedEnv().gmail;
+    const client = new OAuth2Client(cfg.clientId, cfg.clientSecret);
+    client.transporter.defaults.timeout = 15000;
+    client.setCredentials({ refresh_token: cfg.refreshToken });
+    const body = `Você recebeu um convite para criar seu acesso ao Entre Linhas.\n\n` +
+      `Use o link abaixo para escolher seu login, senha e telefone. O convite é válido por 48 horas e só pode ser usado uma vez.\n\n${inviteUrl}\n\n` +
+      'Se você não esperava este convite, ignore esta mensagem.';
+    const mime = [
+      `From: Entre Linhas <${cfg.sender}>`, `To: ${email}`,
+      'Subject: Convite para acessar o Entre Linhas',
+      'MIME-Version: 1.0', 'Content-Type: text/plain; charset=UTF-8',
+      'Content-Transfer-Encoding: base64', '', Buffer.from(body).toString('base64'),
+    ].join('\r\n');
+    await client.request({
+      url: `https://gmail.googleapis.com/gmail/v1/users/${encodeURIComponent(cfg.sender)}/messages/send`,
+      method: 'POST', data: { raw: Buffer.from(mime).toString('base64url') }, timeout: 15000, retry: false,
+    });
+  }
 }

@@ -1,5 +1,5 @@
 import { Component, OnInit, signal } from '@angular/core';
-import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+import { RouterOutlet, RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from './services/auth.service';
 import { WhatsAppFloatComponent } from './components/whatsapp-float/whatsapp-float';
@@ -15,7 +15,7 @@ export class App implements OnInit {
   showMobileMenu = false;
   showUserMenu = false;
 
-  constructor(public authService: AuthService) {}
+  constructor(public authService: AuthService, private router: Router) {}
 
   ngOnInit(): void {}
 
@@ -30,6 +30,8 @@ export class App implements OnInit {
   logout(): void {
     this.authService.logout();
     this.showUserMenu = false;
+    this.showMobileMenu = false;
+    void this.router.navigate(['/']);
   }
 
   get currentUser() {

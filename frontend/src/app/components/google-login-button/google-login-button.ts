@@ -33,7 +33,8 @@ export class GoogleLoginButton implements AfterViewInit, OnDestroy {
         callback: (response) => { if (!this.destroyed) void this.submit(response.credential); },
       });
       google.accounts.id.renderButton(this.button.nativeElement, {
-        type: 'standard', theme: 'outline', size: 'large', text: 'continue_with', locale: 'pt-BR',
+        type: 'standard', theme: 'outline', size: 'large', text: 'continue_with',
+        shape: 'pill', logo_alignment: 'left', locale: 'pt-BR', width: 300,
       });
     } catch {
       if (!this.destroyed) this.message.set('Google indisponível no momento. Recarregue a página para tentar novamente.');

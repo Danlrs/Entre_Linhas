@@ -63,8 +63,9 @@ export class GoogleService {
             reject(new Error('O acesso ao Drive não foi autorizado.'));
             return;
           }
-          const view = new google.picker.DocsView(google.picker.ViewId.DOCS)
-            .setIncludeFolders(true).setSelectFolderEnabled(false)
+          // Keep the picker focused: hide folders/Classroom documents and show owned images only.
+          const view = new google.picker.DocsView(google.picker.ViewId.DOCS_IMAGES)
+            .setIncludeFolders(false).setSelectFolderEnabled(false).setOwnedByMe(true)
             .setMimeTypes('image/jpeg,image/png,image/webp,image/avif,image/gif,image/tiff,image/bmp,image/svg+xml,image/heic,image/heif');
           const builder = new google.picker.PickerBuilder()
             .addView(view).setOAuthToken(response.access_token)
@@ -82,6 +83,7 @@ export class GoogleService {
                   .then(resolve, reject);
               }
             });
+          builder.enableFeature(google.picker.Feature.NAV_HIDDEN);
           if (multiple) builder.enableFeature(google.picker.Feature.MULTISELECT_ENABLED);
           const picker = builder.build();
           picker.setVisible(true);

@@ -17,6 +17,7 @@ export class Login implements OnInit {
 
   authForm!: FormGroup;
   errorMessage = '';
+  successMessage = '';
   isSubmitting = false;
 
   constructor(
@@ -33,6 +34,8 @@ export class Login implements OnInit {
 
     if (this.route.snapshot.queryParamMap.get('sessionExpired') === '1') {
       this.errorMessage = 'Sua sessão expirou. Faça login novamente para continuar.';
+    } else if (this.route.snapshot.queryParamMap.get('invited') === '1') {
+      this.successMessage = 'Cadastro concluído. Entre com seu login e senha.';
     }
 
     this.authForm = this.fb.group({

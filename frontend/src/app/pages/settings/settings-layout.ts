@@ -6,7 +6,7 @@ import { AuthService } from '../../services/auth.service';
 interface SettingsNavItem {
   label: string;
   description: string;
-  icon: 'user' | 'box';
+  icon: 'user' | 'box' | 'users';
   route: string;
 }
 
@@ -30,6 +30,12 @@ export class SettingsLayout implements OnInit {
       description: 'Produtos, categorias, materiais e estampas',
       icon: 'box',
       route: '/configuracoes/catalogo',
+    },
+    {
+      label: 'Usuários',
+      description: 'Convide pessoas para acessar o painel',
+      icon: 'users',
+      route: '/configuracoes/usuarios',
     },
   ];
 

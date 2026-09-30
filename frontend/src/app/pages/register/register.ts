@@ -1,65 +1,55 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { RouterLink, Router } from '@angular/router';
+import { RouterLink, Router, ActivatedRoute } from '@angular/router';
 import { UserService } from '../../services/user.service';
-import {
-  brazilPhoneOptionalValidator,
-  maskBrazilPhoneInput,
-  normalizeBrazilPhoneForApi,
-} from '../../utils/brazil-phone';
+import { brazilPhoneDigits, isValidBrazilPhoneDigits, maskBrazilPhoneInput } from '../../utils/brazil-phone';
 
 @Component({
-  selector: 'app-register',
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
-  templateUrl: './register.html',
-  styleUrl: './register.css',
+  selector: 'app-register', imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  templateUrl: './register.html', styleUrl: './register.css',
 })
 export class Register implements OnInit {
   userForm!: FormGroup;
   errorMessage = '';
   isSubmitting = false;
+  loadingInvitation = true;
+  email = '';
+  private token = '';
 
-  constructor(
-    private userService: UserService,
-    private fb: FormBuilder,
-    private router: Router,
-  ) {}
+  constructor(private users: UserService, private fb: FormBuilder, private router: Router, private route: ActivatedRoute) {}
 
   ngOnInit(): void {
     this.userForm = this.fb.group({
-      email: ['', [Validators.required, Validators.email]],
-      login: ['', Validators.required],
-      password: ['', [Validators.required, Validators.minLength(6)]],
-      telefone: ['', brazilPhoneOptionalValidator()],
+      login: ['', [Validators.required, Validators.pattern(/^[A-Za-z0-9._-]{3,50}$/)]],
+      password: ['', [Validators.required, Validators.minLength(8)]],
+      telefone: ['', [Validators.required, (control: { value: string }) => isValidBrazilPhoneDigits(brazilPhoneDigits(control.value)) ? null : { brazilPhone: true }]],
+    });
+    this.token = this.route.snapshot.queryParamMap.get('token') ?? '';
+    if (!this.token) {
+      this.loadingInvitation = false;
+      this.errorMessage = 'Este link de convite está incompleto. Peça um novo convite ao usuário que cadastrou você.';
+      return;
+    }
+    this.users.getInvitation(this.token).subscribe({
+      next: (invite) => { this.email = invite.email; this.loadingInvitation = false; },
+      error: (err) => { this.errorMessage = err?.error?.message ?? 'Este convite expirou ou já foi utilizado. Peça um novo convite.'; this.loadingInvitation = false; },
     });
   }
 
   onTelefoneInput(event: Event): void {
     const input = event.target as HTMLInputElement;
     const masked = maskBrazilPhoneInput(input.value);
-    this.userForm.get('telefone')?.setValue(masked, { emitEvent: false });
-    input.value = masked;
+    this.userForm.get('telefone')?.setValue(masked, { emitEvent: false }); input.value = masked;
   }
 
   registerUser(): void {
-    if (this.userForm.invalid) return;
-
-    this.isSubmitting = true;
-    this.errorMessage = '';
-
-    const { email, login, password, telefone } = this.userForm.value;
-    const phone = normalizeBrazilPhoneForApi(telefone);
-    this.userService.registerUser({ email, login, password, telefone: phone }).subscribe({
-      next: () => {
-        this.isSubmitting = false;
-        this.router.navigate(['/admin']);
-      },
-      error: (err) => {
-        this.isSubmitting = false;
-        this.errorMessage =
-          err?.error?.message ?? 'Erro ao realizar cadastro. Tente novamente.';
-      },
+    if (this.userForm.invalid || !this.email || this.isSubmitting) return;
+    this.isSubmitting = true; this.errorMessage = '';
+    const { login, password, telefone } = this.userForm.value;
+    this.users.acceptInvitation({ token: this.token, login, password, telefone: brazilPhoneDigits(telefone) }).subscribe({
+      next: () => { this.isSubmitting = false; void this.router.navigate(['/admin'], { queryParams: { invited: '1' } }); },
+      error: (err) => { this.isSubmitting = false; this.errorMessage = err?.error?.message ?? 'Não foi possível concluir o cadastro. Verifique o convite e tente novamente.'; },
     });
   }
 }
